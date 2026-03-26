@@ -168,43 +168,146 @@ export function buildHomePage(publicConfig) {
 
 function legalContent(kind, cfg) {
   if (kind === "impressum") {
-    return `
-      <h1>Impressum</h1>
-      <p><strong>${cfg.companyName}</strong></p>
-      <p>${cfg.ownerName}</p>
-      <p>${cfg.streetAddress}</p>
-      <p>${cfg.postalCode} ${cfg.city}</p>
-      <p>${cfg.country}</p>
-      <p>E-Mail: <a href="mailto:${cfg.supportEmail}">${cfg.supportEmail}</a></p>
-      <p>Перед продакшн-запуском перевірте ці реквізити відповідно до фактичної юридичної форми діяльності.</p>
-    `;
-  }
+  return `
+    <h1>Impressum</h1>
+    <p><strong>${cfg.companyName}</strong></p>
+    <p>${cfg.ownerName}</p>
+    <p>${cfg.streetAddress}</p>
+    <p>${cfg.postalCode} ${cfg.city}</p>
+    <p>${cfg.country}</p>
+    <p>E-Mail: <a href="mailto:${cfg.supportEmail}">${cfg.supportEmail}</a></p>
+    <h2>Haftung fuer Inhalte</h2>
+    <p>
+      Als Diensteanbieter sind wir gemaess § 7 Abs.1 TMG fuer eigene Inhalte auf diesen Seiten nach
+      den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 TMG sind wir als Diensteanbieter
+      jedoch nicht verpflichtet, uebermittelte oder gespeicherte fremde Informationen zu ueberwachen
+      oder nach Umstaenden zu forschen, die auf eine rechtswidrige Taetigkeit hinweisen.
+      Verpflichtungen zur Entfernung oder Sperrung der Nutzung von Informationen nach den allgemeinen
+      Gesetzen bleiben hiervon unberuehrt. Eine diesbezuegliche Haftung ist jedoch erst ab dem
+      Zeitpunkt der Kenntnis einer konkreten Rechtsverletzung moeglich. Bei Bekanntwerden von
+      entsprechenden Rechtsverletzungen werden wir diese Inhalte umgehend entfernen.
+    </p>
+    <h2>Haftung fuer Links</h2>
+    <p>
+      Unser Angebot enthaelt Links zu externen Websites Dritter, auf deren Inhalte wir keinen
+      Einfluss haben. Deshalb koennen wir fuer diese fremden Inhalte auch keine Gewaehr uebernehmen.
+      Fuer die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber der
+      Seiten verantwortlich. Die verlinkten Seiten wurden zum Zeitpunkt der Verlinkung auf moegliche
+      Rechtsverstoesse ueberprueft. Rechtswidrige Inhalte waren zum Zeitpunkt der Verlinkung nicht
+      erkennbar. Eine permanente inhaltliche Kontrolle der verlinkten Seiten ist jedoch ohne konkrete
+      Anhaltspunkte einer Rechtsverletzung nicht zumutbar. Bei Bekanntwerden von Rechtsverletzungen
+      werden wir derartige Links umgehend entfernen.
+    </p>
+  `;
+}
 
   if (kind === "datenschutz") {
-    return `
-      <h1>Datenschutzerklärung</h1>
-      <p>
-        ${cfg.appName} обробляє завантажені користувачем документи виключно для автоматичного аналізу
-        змісту листа та генерації пояснення українською мовою.
-      </p>
-      <h2>Які дані обробляються</h2>
-      <p>Фото або PDF листа, технічні метадані запиту та згенерований результат аналізу.</p>
-      <h2>Мета обробки</h2>
-      <p>Пояснення змісту листа, виявлення дедлайнів і підготовка чернетки відповіді.</p>
-      <h2>Передача третім сторонам</h2>
-      <p>Для AI-аналізу зміст документа передається зовнішньому AI-провайдеру OpenAI.</p>
-      <h2>Зберігання</h2>
-      <p>У цій MVP-версії файли обробляються в пам'яті сервера і не призначені для довготривалого зберігання.</p>
-      <h2>Правова підстава</h2>
-      <p>Згода користувача перед відправкою документа на аналіз.</p>
-      <h2>Права користувача</h2>
-      <p>
-        Для запитів щодо обробки персональних даних звертайтесь:
-        <a href="mailto:${cfg.contactEmail}">${cfg.contactEmail}</a>.
-      </p>
-      <p>Цей текст є MVP-шаблоном і має бути перевірений юристом або Datenschutzberater перед продакшн-запуском.</p>
-    `;
-  }
+  return `
+    <h1>Datenschutzerklaerung</h1>
+
+    <p>
+      Mit dieser Datenschutzerklaerung informieren wir Sie ueber Art, Umfang und Zweck
+      der Verarbeitung personenbezogener Daten bei der Nutzung dieser Website.
+    </p>
+
+    <h2>Verantwortlich fuer die Datenverarbeitung</h2>
+    <p>${cfg.ownerName}</p>
+    <p>${cfg.streetAddress}</p>
+    <p>${cfg.postalCode} ${cfg.city}</p>
+    <p>${cfg.country}</p>
+    <p>E-Mail: <a href="mailto:${cfg.contactEmail}">${cfg.contactEmail}</a></p>
+
+    <h2>Welche Daten wir verarbeiten</h2>
+    <p>
+      Wir verarbeiten personenbezogene Daten, die Sie uns aktiv uebermitteln, insbesondere
+      wenn Sie ueber diese Website Dokumente hochladen oder Kontakt mit uns aufnehmen.
+    </p>
+    <p>
+      Dazu koennen insbesondere folgende Daten gehoeren:
+    </p>
+    <p>
+      Name, Kontaktdaten, Inhalte hochgeladener Dokumente, technische Zugriffsdaten,
+      IP-Adresse, Browserinformationen sowie Zeitpunkte des Zugriffs.
+    </p>
+
+    <h2>Zweck der Verarbeitung</h2>
+    <p>
+      Die Verarbeitung erfolgt zum Betrieb dieser Website, zur Bearbeitung von Anfragen,
+      zur Analyse von durch Sie uebermittelten Schreiben sowie zur Bereitstellung von
+      Erlaeuterungen und Antwortentwuerfen.
+    </p>
+
+    <h2>Rechtsgrundlagen</h2>
+    <p>
+      Die Verarbeitung erfolgt auf Grundlage Ihrer Einwilligung gemaess Art. 6 Abs. 1
+      lit. a DSGVO, zur Durchfuehrung vorvertraglicher oder vertraglicher Massnahmen
+      gemaess Art. 6 Abs. 1 lit. b DSGVO, zur Erfuellung rechtlicher Verpflichtungen
+      gemaess Art. 6 Abs. 1 lit. c DSGVO oder aufgrund berechtigter Interessen gemaess
+      Art. 6 Abs. 1 lit. f DSGVO.
+    </p>
+
+    <h2>Dokumentenanalyse</h2>
+    <p>
+      Wenn Sie ein Foto oder PDF eines Schreibens hochladen, verarbeiten wir die darin
+      enthaltenen Informationen ausschliesslich zum Zweck der Analyse und Erlaeuterung
+      des Inhalts sowie zur Erstellung eines moeglichen Antwortentwurfs.
+    </p>
+    <p>
+      Bitte laden Sie nur Dokumente hoch, zu deren Verarbeitung und Weitergabe Sie
+      berechtigt sind.
+    </p>
+
+    <h2>Weitergabe an Dritte</h2>
+    <p>
+      Soweit dies technisch oder organisatorisch erforderlich ist, koennen Daten an
+      externe Dienstleister weitergegeben werden. Dies betrifft insbesondere Hosting-
+      Anbieter und technische Anbieter, die fuer die automatisierte Dokumentenanalyse
+      eingesetzt werden.
+    </p>
+    <p>
+      Fuer die KI-gestuetzte Analyse kann eine Uebermittlung an OpenAI erfolgen.
+    </p>
+
+    <h2>Speicherdauer</h2>
+    <p>
+      Personenbezogene Daten werden nur so lange gespeichert, wie dies fuer die
+      jeweiligen Zwecke erforderlich ist oder gesetzliche Aufbewahrungspflichten bestehen.
+    </p>
+
+    <h2>Ihre Rechte</h2>
+    <p>
+      Ihnen stehen die gesetzlichen Rechte auf Auskunft, Berichtigung, Loeschung,
+      Einschraenkung der Verarbeitung, Datenuebertragbarkeit sowie Widerruf und
+      Widerspruch zu.
+    </p>
+    <p>
+      Zudem haben Sie das Recht, sich bei einer Datenschutz-Aufsichtsbehoerde zu
+      beschweren.
+    </p>
+
+    <h2>Technische Zugriffsdaten</h2>
+    <p>
+      Beim Aufruf dieser Website werden technische Daten verarbeitet, insbesondere
+      IP-Adresse, Datum und Uhrzeit des Zugriffs, Browsertyp, Betriebssystem und
+      angeforderte Inhalte. Diese Verarbeitung ist erforderlich, um den sicheren und
+      stabilen Betrieb der Website zu gewaehrleisten.
+    </p>
+
+    <h2>Sicherheitsmassnahmen</h2>
+    <p>
+      Wir treffen angemessene technische und organisatorische Massnahmen, um
+      personenbezogene Daten vor Verlust, Manipulation und unbefugtem Zugriff zu
+      schuetzen.
+    </p>
+
+    <h2>Kontakt</h2>
+    <p>
+      Bei Fragen zum Datenschutz koennen Sie uns unter
+      <a href="mailto:${cfg.contactEmail}">${cfg.contactEmail}</a>
+      kontaktieren.
+    </p>
+  `;
+}
 
   return `
     <h1>Kontakt</h1>
