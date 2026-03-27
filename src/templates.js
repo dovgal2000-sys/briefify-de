@@ -15,7 +15,6 @@ function layout({ title, description, body, publicConfig }) {
       <nav class="nav-links">
         <a href="/#how-it-works">Як це працює</a>
         <a href="/#legal">Правова інформація</a>
-        <a href="/kontakt">Kontakt</a>
       </nav>
     </div>
   </header>
