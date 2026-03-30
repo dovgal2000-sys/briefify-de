@@ -12,6 +12,27 @@ import { buildHomePage, buildLegalPage } from "./src/templates.js";
 const app = express();
 const config = getServerConfig();
 const publicConfig = getPublicConfig(config);
+const MIN_HUMAN_FILL_MS = 1500;
+
+async function validateTurnstileToken(token, remoteIp, secretKey) {
+  const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: new URLSearchParams({
+      secret: secretKey,
+      response: token,
+      remoteip: remoteIp || ""
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Turnstile siteverify failed with status ${response.status}`);
+  }
+
+  return response.json();
+}
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -80,6 +101,44 @@ app.get("/api/public-config", (_req, res) => {
 
 app.post("/api/analyze-letter", rateLimiter, upload.single("letter"), async (req, res) => {
   try {
+    if (!config.turnstileSecretKey) {
+      return res.status(500).json({
+        error: "Turnstile не налаштований на сервері. Додайте TURNSTILE_SECRET_KEY."
+      });
+    }
+
+    if (typeof req.body?.website === "string" && req.body.website.trim() !== "") {
+      return res.status(400).json({
+        error: "Запит відхилено системою захисту від автоматичних відправлень."
+      });
+    }
+
+    const loadedAt = Number(req.body?.form_loaded_at || 0);
+    if (!loadedAt || Date.now() - loadedAt < MIN_HUMAN_FILL_MS) {
+      return res.status(400).json({
+        error: "Запит виглядає автоматичним. Спробуйте відправити форму ще раз."
+      });
+    }
+
+    const turnstileToken = String(req.body?.cf_turnstile_response || "").trim();
+    if (!turnstileToken) {
+      return res.status(400).json({
+        error: "Підтвердіть, будь ласка, що ви не бот."
+      });
+    }
+
+    const turnstileResult = await validateTurnstileToken(
+      turnstileToken,
+      req.socket.remoteAddress,
+      config.turnstileSecretKey
+    );
+
+    if (!turnstileResult.success) {
+      return res.status(400).json({
+        error: "Перевірка Turnstile не пройдена. Спробуйте ще раз."
+      });
+    }
+
     if (!req.file) {
       return res.status(400).json({
         error: "Будь ласка, завантажте файл у форматі JPG, PNG або PDF."

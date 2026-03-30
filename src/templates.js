@@ -6,12 +6,16 @@ function layout({ title, description, body, publicConfig }) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${title}</title>
   <meta name="description" content="${description}" />
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
   <link rel="stylesheet" href="/assets/styles.css" />
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
   <header class="site-header">
     <div class="container nav">
-      <a class="brand" href="/">${publicConfig.appName}</a>
+      <a class="brand" href="/">
+        <img class="brand-logo" src="/assets/logo.svg" alt="${publicConfig.appName}" />
+      </a>
       <nav class="nav-links">
         <a href="/#how-it-works">Як це працює</a>
         <a href="/#legal">Правова інформація</a>
@@ -38,6 +42,21 @@ function layout({ title, description, body, publicConfig }) {
       </div>
     </div>
   </footer>
+  <div id="cookie-banner" class="cookie-banner hidden" role="dialog" aria-live="polite" aria-label="Повідомлення про cookies">
+    <div class="cookie-banner-inner">
+      <div class="cookie-copy">
+        <p>
+          Ми використовуємо технічні cookies та локальне збереження даних для коректної роботи сайту.
+          Детальніше читайте у <a href="/datenschutz">Datenschutzerklärung</a>.
+        </p>
+        <p class="cookie-copy-secondary">
+          Wir verwenden technische Cookies und lokale Speicherung, damit die Website korrekt funktioniert.
+          Weitere Informationen finden Sie in der <a href="/datenschutz">Datenschutzerklärung</a>.
+        </p>
+      </div>
+      <button id="cookie-accept" class="secondary-button" type="button">Зрозуміло</button>
+    </div>
+  </div>
 </body>
 </html>`;
 }
@@ -53,8 +72,8 @@ export function buildHomePage(publicConfig) {
         <section class="hero">
           <div class="container hero-grid">
             <div class="hero-copy">
-              <span class="eyebrow">MVP для українців у Німеччині</span>
-              <h1>Завантажте німецький лист і отримайте пояснення українською</h1>
+              <span class="eyebrow">Сервіс для українців у Німеччині</span>
+              <h1>Завантажте лист на німецькій мові та отримайте пояснення українською</h1>
               <p class="lead">
                 ${publicConfig.appName} допомагає зрозуміти зміст листа, знайти дедлайни, ризики та
                 підготувати чернетку відповіді німецькою мовою.
@@ -67,6 +86,11 @@ export function buildHomePage(publicConfig) {
             </div>
             <div class="upload-card">
               <form id="analyze-form" class="analyze-form">
+                <input id="form-loaded-at" name="form_loaded_at" type="hidden" value="" />
+                <div class="bot-trap" aria-hidden="true">
+                  <label for="website">Не заповнюйте це поле</label>
+                  <input id="website" name="website" type="text" tabindex="-1" autocomplete="off" />
+                </div>
                 <label class="upload-zone" for="letter">
                   <input id="letter" name="letter" type="file" accept=".jpg,.jpeg,.png,.pdf" required />
                   <span class="upload-button">Оберіть фото або PDF</span>
@@ -91,6 +115,20 @@ export function buildHomePage(publicConfig) {
                     <a href="/datenschutz">Datenschutzerklärung</a>.
                   </span>
                 </label>
+                ${
+                  publicConfig.turnstileSiteKey
+                    ? `
+                <div
+                  class="cf-turnstile"
+                  data-sitekey="${publicConfig.turnstileSiteKey}"
+                  data-theme="light"
+                  data-language="uk"
+                ></div>`
+                    : `
+                <p class="fine-print">
+                  Turnstile ще не налаштований. Додайте ключ сайту в .env для активації захисту від ботів.
+                </p>`
+                }
                 <button class="primary-button" type="submit">Пояснити лист</button>
                 <p class="fine-print">
                   Сервіс не є юридичною консультацією. Не завантажуйте документи, якщо у вас немає права

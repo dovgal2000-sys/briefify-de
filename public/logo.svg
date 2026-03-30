@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 230 72" role="img" aria-labelledby="title desc">
+  <title id="title">Briefify logo</title>
+  <desc id="desc">Blue and yellow logo with a speech bubble and document lines.</desc>
+  <defs>
+    <linearGradient id="flagBlock" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="50%" stop-color="#0057b7"/>
+      <stop offset="50%" stop-color="#ffd700"/>
+      <stop offset="100%" stop-color="#ffd700"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(4 4)">
+    <rect x="0" y="0" width="64" height="64" rx="18" fill="url(#flagBlock)"/>
+    <path d="M18 17h16c7.18 0 13 5.82 13 13v2c0 7.18-5.82 13-13 13H27l-8 8V17Z" fill="#ffffff" opacity="0.98"/>
+    <path d="M26 29h13M26 35h10" stroke="#0057b7" stroke-width="3.2" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(80 15)">
+    <text x="0" y="24" font-family="Segoe UI, Trebuchet MS, Arial, sans-serif" font-size="34" font-weight="800" letter-spacing="0.2" fill="#003f88">Briefify</text>
+  </g>
+</svg>

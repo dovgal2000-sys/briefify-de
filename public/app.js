@@ -7,7 +7,12 @@ const filePreview = document.querySelector("#file-preview");
 const filePreviewName = document.querySelector("#file-preview-name");
 const imagePreview = document.querySelector("#image-preview");
 const pdfPreview = document.querySelector("#pdf-preview");
+const cookieBanner = document.querySelector("#cookie-banner");
+const cookieAccept = document.querySelector("#cookie-accept");
+const formLoadedAtInput = document.querySelector("#form-loaded-at");
 let previewObjectUrl = "";
+const COOKIE_BANNER_KEY = "briefify_cookie_notice_closed";
+const MIN_HUMAN_FILL_MS = 1800;
 
 function resetPreview() {
   if (previewObjectUrl) {
@@ -47,7 +52,17 @@ function renderPreview(file) {
 }
 
 function setStatus(message, tone = "info") {
-  statusBox.textContent = message;
+  if (tone === "loading") {
+    statusBox.innerHTML = `
+      <span class="status-inline">
+        <span class="hourglass" aria-hidden="true"></span>
+        <span>${message}</span>
+      </span>
+    `;
+  } else {
+    statusBox.textContent = message;
+  }
+
   statusBox.className = `status-box status-${tone}`;
 }
 
@@ -80,6 +95,7 @@ function renderResult(data) {
   renderList("risks", data.risks, "Явних ризиків не виявлено.");
 
   resultCard.classList.remove("hidden");
+  resultCard.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 fileInput?.addEventListener("change", () => {
@@ -96,14 +112,28 @@ form?.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const file = fileInput.files?.[0];
+  const loadedAt = Number(formLoadedAtInput?.value || 0);
+  const elapsed = Date.now() - loadedAt;
+
   if (!file) {
     setStatus("Спочатку оберіть файл для аналізу.", "error");
+    return;
+  }
+
+  if (!loadedAt || elapsed < MIN_HUMAN_FILL_MS) {
+    setStatus("Будь ласка, зачекайте секунду й повторіть відправку форми.", "error");
     return;
   }
 
   const formData = new FormData();
   formData.set("letter", file);
   formData.set("consent", String(document.querySelector("#consent").checked));
+  formData.set("form_loaded_at", String(loadedAt));
+  formData.set("website", document.querySelector("#website")?.value || "");
+  formData.set(
+    "cf_turnstile_response",
+    document.querySelector("[name='cf-turnstile-response']")?.value || ""
+  );
 
   resultCard.classList.add("hidden");
   setStatus("Завантаження документа...", "loading");
@@ -143,3 +173,23 @@ copyButton?.addEventListener("click", async () => {
 window.addEventListener("beforeunload", () => {
   resetPreview();
 });
+
+function initCookieBanner() {
+  if (!cookieBanner || !cookieAccept) return;
+
+  const dismissed = window.localStorage.getItem(COOKIE_BANNER_KEY) === "true";
+  if (!dismissed) {
+    cookieBanner.classList.remove("hidden");
+  }
+
+  cookieAccept.addEventListener("click", () => {
+    window.localStorage.setItem(COOKIE_BANNER_KEY, "true");
+    cookieBanner.classList.add("hidden");
+  });
+}
+
+initCookieBanner();
+
+if (formLoadedAtInput) {
+  formLoadedAtInput.value = String(Date.now());
+}
