@@ -3,13 +3,16 @@ const fileInput = document.querySelector("#letter");
 const statusBox = document.querySelector("#status-box");
 const resultCard = document.querySelector("#result-card");
 const copyButton = document.querySelector("#copy-reply");
+const sendEmailButton = document.querySelector("#send-email");
 const filePreview = document.querySelector("#file-preview");
 const filePreviewName = document.querySelector("#file-preview-name");
 const imagePreview = document.querySelector("#image-preview");
 const pdfPreview = document.querySelector("#pdf-preview");
 const cookieBanner = document.querySelector("#cookie-banner");
 const cookieAccept = document.querySelector("#cookie-accept");
+const consentInput = document.querySelector("#consent");
 const formLoadedAtInput = document.querySelector("#form-loaded-at");
+const replyEmailInput = document.querySelector("#reply-email");
 let previewObjectUrl = "";
 const COOKIE_BANNER_KEY = "briefify_cookie_notice_closed";
 const MIN_HUMAN_FILL_MS = 1800;
@@ -120,6 +123,11 @@ form?.addEventListener("submit", async (event) => {
     return;
   }
 
+  if (!consentInput?.checked) {
+    setStatus("Потрібно підтвердити згоду на обробку документа.", "error");
+    return;
+  }
+
   if (!loadedAt || elapsed < MIN_HUMAN_FILL_MS) {
     setStatus("Будь ласка, зачекайте секунду й повторіть відправку форми.", "error");
     return;
@@ -127,7 +135,7 @@ form?.addEventListener("submit", async (event) => {
 
   const formData = new FormData();
   formData.set("letter", file);
-  formData.set("consent", String(document.querySelector("#consent").checked));
+  formData.set("consent", String(consentInput.checked));
   formData.set("form_loaded_at", String(loadedAt));
   formData.set("website", document.querySelector("#website")?.value || "");
   formData.set(
@@ -168,6 +176,26 @@ copyButton?.addEventListener("click", async () => {
   } catch (_error) {
     setStatus("Не вдалося скопіювати текст автоматично. Скопіюйте його вручну.", "error");
   }
+});
+
+sendEmailButton?.addEventListener("click", () => {
+  const replyText = document.getElementById("reply_de").textContent.trim();
+  const recipient = (replyEmailInput?.value || "").trim();
+
+  if (!replyText) {
+    setStatus("Спочатку отримайте чернетку відповіді.", "error");
+    return;
+  }
+
+  if (!recipient) {
+    setStatus("Вкажіть email одержувача.", "error");
+    replyEmailInput?.focus();
+    return;
+  }
+
+  const subject = encodeURIComponent("Antwort auf Ihr Schreiben");
+  const body = encodeURIComponent(replyText);
+  window.location.href = `mailto:${encodeURIComponent(recipient)}?subject=${subject}&body=${body}`;
 });
 
 window.addEventListener("beforeunload", () => {

@@ -29,11 +29,13 @@ export async function extractDocumentPayload(file, config) {
       return {
         mode: isProbablyScanned ? "pdf_fallback_ocr" : "pdf_text",
         extractedText,
-        fileInput: {
-          type: "input_file",
-          filename: file.originalname,
-          file_data: file.buffer.toString("base64")
-        }
+        fileInput: isProbablyScanned
+          ? {
+              type: "input_file",
+              filename: file.originalname,
+              file_data: file.buffer.toString("base64")
+            }
+          : null
       };
     } catch (_error) {
       return {

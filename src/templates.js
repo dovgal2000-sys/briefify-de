@@ -1,4 +1,4 @@
-function layout({ title, description, body, publicConfig }) {
+function layout({ title, description, body, publicConfig, extraHead = "" }) {
   return `<!DOCTYPE html>
 <html lang="uk">
 <head>
@@ -6,7 +6,10 @@ function layout({ title, description, body, publicConfig }) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${title}</title>
   <meta name="description" content="${description}" />
+  ${extraHead}
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="64x64" href="/assets/favicon.png" />
+  <link rel="shortcut icon" href="/favicon.ico" />
   <link rel="stylesheet" href="/assets/styles.css" />
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
@@ -18,6 +21,7 @@ function layout({ title, description, body, publicConfig }) {
       </a>
       <nav class="nav-links">
         <a href="/#how-it-works">Як це працює</a>
+        <a href="/statti">Статті</a>
         <a href="/#legal">Правова інформація</a>
       </nav>
     </div>
@@ -31,6 +35,7 @@ function layout({ title, description, body, publicConfig }) {
       </div>
       <div>
         <h4>Правова інформація</h4>
+        <a href="/statti">Статті</a>
         <a href="/impressum">Impressum</a>
         <a href="/datenschutz">Datenschutzerklärung</a>
         <a href="/kontakt">Kontakt</a>
@@ -61,7 +66,38 @@ function layout({ title, description, body, publicConfig }) {
 </html>`;
 }
 
-export function buildHomePage(publicConfig) {
+function formatArticleDate(isoDate) {
+  return new Intl.DateTimeFormat("uk-UA", {
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  }).format(new Date(isoDate));
+}
+
+function renderArticleCards(articles) {
+  return articles
+    .map(
+      (article) => `
+        <article class="article-card">
+          <div class="article-cover ${article.coverTone}">
+            <span class="article-cover-kicker">${article.category.title}</span>
+            <strong>${article.coverTitle}</strong>
+            <span>${article.coverSubtitle}</span>
+          </div>
+          <div class="article-card-topline">
+            <span class="article-category-chip">${article.category.title}</span>
+            <span class="article-card-meta">${formatArticleDate(article.publishedAt)} · ${article.readingTime}</span>
+          </div>
+          <h3><a href="/statti/${article.slug}">${article.title}</a></h3>
+          <p>${article.description}</p>
+          <a class="article-card-link" href="/statti/${article.slug}">Читати статтю</a>
+        </article>
+      `
+    )
+    .join("");
+}
+
+export function buildHomePage(publicConfig, featuredArticles = []) {
   return layout({
     title: `${publicConfig.appName} - Пояснення німецьких листів українською`,
     description:
@@ -92,7 +128,7 @@ export function buildHomePage(publicConfig) {
                   <input id="website" name="website" type="text" tabindex="-1" autocomplete="off" />
                 </div>
                 <label class="upload-zone" for="letter">
-                  <input id="letter" name="letter" type="file" accept=".jpg,.jpeg,.png,.pdf" required />
+                  <input id="letter" name="letter" type="file" accept=".jpg,.jpeg,.png,.pdf" />
                   <span class="upload-button">Оберіть фото або PDF</span>
                   <span class="upload-subtitle">Рекомендовано чітке фото без тіней або оригінальний PDF</span>
                 </label>
@@ -109,7 +145,7 @@ export function buildHomePage(publicConfig) {
                   ></iframe>
                 </div>
                 <label class="consent">
-                  <input id="consent" name="consent" type="checkbox" required />
+                  <input id="consent" name="consent" type="checkbox" />
                   <span>
                     Я підтверджую, що погоджуюсь на обробку документа для AI-аналізу згідно з
                     <a href="/datenschutz">Datenschutzerklärung</a>.
@@ -194,9 +230,26 @@ export function buildHomePage(publicConfig) {
               <div class="result-block">
                 <div class="result-title-row">
                   <h3>Чернетка відповіді німецькою</h3>
-                  <button id="copy-reply" class="secondary-button" type="button">Скопіювати</button>
+                  <div class="result-actions">
+                    <button id="copy-reply" class="secondary-button" type="button">Скопіювати</button>
+                    <button id="send-email" class="secondary-button" type="button">Відправити на email</button>
+                  </div>
                 </div>
                 <pre id="reply_de" class="reply-box"></pre>
+                <div class="email-compose">
+                  <label class="email-label" for="reply-email">Email одержувача</label>
+                  <input
+                    id="reply-email"
+                    class="email-input"
+                    type="email"
+                    inputmode="email"
+                    autocomplete="email"
+                    placeholder="example@email.de"
+                  />
+                  <p class="fine-print">
+                    Кнопка відкриє ваш поштовий клієнт з підставленою темою та чернеткою відповіді.
+                  </p>
+                </div>
               </div>
               <div class="result-block">
                 <h3>Що означає ця відповідь</h3>
@@ -206,6 +259,25 @@ export function buildHomePage(publicConfig) {
                 <h3>Важливо</h3>
                 <p id="disclaimer"></p>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="container">
+            <div class="section-head">
+              <span class="eyebrow">SEO-статті</span>
+              <h2>Корисні пояснення про німецькі листи та формуляри</h2>
+              <p class="lead">
+                Ми зібрали прості статті українською про Jobcenter, Auslaenderbehoerde, Krankenkasse,
+                Schule та інші часті листи, які приходять у Німеччині.
+              </p>
+            </div>
+            <div class="article-grid">
+              ${renderArticleCards(featuredArticles)}
+            </div>
+            <div class="section-cta">
+              <a class="secondary-button" href="/statti">Переглянути всі статті</a>
             </div>
           </div>
         </section>
@@ -225,6 +297,119 @@ export function buildLegalPage(titleKey, title, legalHtml, publicConfig) {
         <div class="container legal-card">
           ${legalHtml}
         </div>
+      </main>
+    `
+  });
+}
+
+function renderCategoryFilters(categories, activeCategorySlug = "") {
+  const allChipClass = activeCategorySlug ? "category-filter" : "category-filter category-filter-active";
+  const allHref = "/statti";
+  const categoryLinks = categories
+    .map((category) => {
+      const isActive = category.slug === activeCategorySlug;
+      return `<a class="category-filter${isActive ? " category-filter-active" : ""}" href="/statti/kategoria/${category.slug}">${category.title}</a>`;
+    })
+    .join("");
+
+  return `
+    <div class="category-filters">
+      <a class="${allChipClass}" href="${allHref}">Усі статті</a>
+      ${categoryLinks}
+    </div>
+  `;
+}
+
+export function buildArticlesIndexPage(publicConfig, articles, categories, activeCategory = null) {
+  const titlePrefix = activeCategory
+    ? `Статті категорії ${activeCategory.title}`
+    : "Статті про німецькі листи";
+  return layout({
+    title: `${titlePrefix} - ${publicConfig.appName}`,
+    description:
+      "Добірка статей українською про німецькі офіційні листи, Jobcenter, Krankenkasse, Auslaenderbehoerde та шкільні повідомлення.",
+    publicConfig,
+    body: `
+      <main class="section">
+        <div class="container">
+          <div class="section-head section-head-left">
+            <span class="eyebrow">База знань</span>
+            <h1>${activeCategory ? `Категорія: ${activeCategory.title}` : "Статті про німецькі офіційні листи"}</h1>
+            <p class="lead">
+              Тут зібрані прості пояснення українською мовою для типових листів з Німеччини:
+              Jobcenter, Schule, Krankenkasse, Auslaenderbehoerde, Kündigung і формуляри.
+            </p>
+          </div>
+          ${renderCategoryFilters(categories, activeCategory?.slug || "")}
+          <div class="article-grid article-grid-full">
+            ${renderArticleCards(articles)}
+          </div>
+        </div>
+      </main>
+    `
+  });
+}
+
+export function buildArticlePage(article, relatedArticles, publicConfig) {
+  const keywords = article.keywords?.join(", ") || "";
+  const relatedHtml = relatedArticles.length
+    ? `
+      <section class="article-related">
+        <h2>Ще корисні статті</h2>
+        <div class="article-grid">
+          ${renderArticleCards(relatedArticles)}
+        </div>
+      </section>
+    `
+    : "";
+
+  return layout({
+    title: `${article.title} - ${publicConfig.appName}`,
+    description: article.description,
+    publicConfig,
+    extraHead: keywords ? `<meta name="keywords" content="${keywords}" />` : "",
+    body: `
+      <main class="section">
+        <article class="container article-shell">
+          <nav class="breadcrumbs" aria-label="breadcrumb">
+            <a href="/">Головна</a>
+            <span>/</span>
+            <a href="/statti">Статті</a>
+            <span>/</span>
+            <span>${article.title}</span>
+          </nav>
+
+          <header class="article-hero">
+            <span class="eyebrow">SEO-стаття</span>
+            <div class="article-cover article-cover-hero ${article.coverTone}">
+              <span class="article-cover-kicker">${article.category.title}</span>
+              <strong>${article.coverTitle}</strong>
+              <span>${article.coverSubtitle}</span>
+            </div>
+            <h1>${article.title}</h1>
+            <p class="lead">${article.description}</p>
+            <div class="article-meta">
+              <span>Дата: ${formatArticleDate(article.publishedAt)}</span>
+              <span>Час читання: ${article.readingTime}</span>
+              <span>Категорія: <a href="/statti/kategoria/${article.category.slug}">${article.category.title}</a></span>
+            </div>
+          </header>
+
+          <div class="article-content">
+            ${article.body}
+          </div>
+
+          <section class="article-cta-box">
+            <h2>Потрібно розібрати реальний лист?</h2>
+            <p>
+              Завантажте фото або PDF у ${publicConfig.appName} і отримайте коротке пояснення
+              українською, дедлайни, ризики та чернетку відповіді німецькою.
+            </p>
+            <a class="primary-button" href="/">Пояснити лист</a>
+          </section>
+
+          ${relatedHtml}
+        </article>
       </main>
     `
   });

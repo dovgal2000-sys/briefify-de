@@ -2,16 +2,30 @@ import "dotenv/config";
 import express from "express";
 import multer from "multer";
 
+import {
+  getAllArticles,
+  getAllCategories,
+  getArticleBySlug,
+  getArticlesByCategory,
+  getCategoryBySlug
+} from "./src/articles/index.js";
 import { getPublicConfig, getServerConfig } from "./src/config.js";
 import { extractDocumentPayload } from "./src/document.js";
 import { getLegalContent } from "./src/legal.js";
 import { analyzeLetterWithOpenAI } from "./src/openai.js";
 import { createRateLimiter } from "./src/rate-limit.js";
-import { buildHomePage, buildLegalPage } from "./src/templates.js";
+import {
+  buildArticlePage,
+  buildArticlesIndexPage,
+  buildHomePage,
+  buildLegalPage
+} from "./src/templates.js";
 
 const app = express();
 const config = getServerConfig();
 const publicConfig = getPublicConfig(config);
+const articles = getAllArticles();
+const categories = getAllCategories();
 const MIN_HUMAN_FILL_MS = 1500;
 
 async function validateTurnstileToken(token, remoteIp, secretKey) {
@@ -48,8 +62,12 @@ app.disable("x-powered-by");
 app.use("/assets", express.static("public", { extensions: ["css", "js"] }));
 app.use(express.json({ limit: "1mb" }));
 
+app.get("/favicon.ico", (_req, res) => {
+  res.redirect(301, "/assets/favicon.svg");
+});
+
 app.get("/", (_req, res) => {
-  res.type("html").send(buildHomePage(publicConfig));
+  res.type("html").send(buildHomePage(publicConfig, articles.slice(0, 6)));
 });
 
 app.get("/index.html", (_req, res) => {
@@ -58,6 +76,86 @@ app.get("/index.html", (_req, res) => {
 
 app.get("/index.htm", (_req, res) => {
   res.redirect(301, "/");
+});
+
+app.get("/statti", (_req, res) => {
+  res.type("html").send(buildArticlesIndexPage(publicConfig, articles, categories));
+});
+
+app.get("/statti/kategoria/:categorySlug", (req, res) => {
+  const category = getCategoryBySlug(req.params.categorySlug);
+
+  if (!category) {
+    return res.status(404).type("html").send(buildLegalPage(
+      "404",
+      "Категорію не знайдено",
+      `
+        <h1>Категорію не знайдено</h1>
+        <p>Можливо, посилання змінилося або така категорія ще не створена.</p>
+        <p><a href="/statti">Повернутися до всіх статей</a></p>
+      `,
+      publicConfig
+    ));
+  }
+
+  const filteredArticles = getArticlesByCategory(category.slug);
+  return res.type("html").send(
+    buildArticlesIndexPage(publicConfig, filteredArticles, categories, category)
+  );
+});
+
+app.get("/statti/:slug", (req, res) => {
+  const article = getArticleBySlug(req.params.slug);
+
+  if (!article) {
+    return res.status(404).type("html").send(buildLegalPage(
+      "404",
+      "Статтю не знайдено",
+      `
+        <h1>Статтю не знайдено</h1>
+        <p>Можливо, посилання змінилося або сторінка ще не створена.</p>
+        <p><a href="/statti">Повернутися до всіх статей</a></p>
+      `,
+      publicConfig
+    ));
+  }
+
+  const relatedArticles = articles
+    .filter((candidate) => candidate.slug !== article.slug)
+    .slice(0, 3);
+
+  return res.type("html").send(buildArticlePage(article, relatedArticles, publicConfig));
+});
+
+app.get("/robots.txt", (_req, res) => {
+  res.type("text/plain").send(
+    ["User-agent: *", "Allow: /", "Disallow: /api/", "", "Sitemap: /sitemap.xml"].join("\n")
+  );
+});
+
+app.get("/sitemap.xml", (_req, res) => {
+  const baseUrl = publicConfig.siteOrigin.replace(/\/$/, "");
+  const urls = [
+    "/",
+    "/statti",
+    "/impressum",
+    "/datenschutz",
+    "/kontakt",
+    ...articles.map((article) => `/statti/${article.slug}`)
+  ];
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls
+  .map(
+    (url) => `  <url>
+    <loc>${baseUrl}${url}</loc>
+  </url>`
+  )
+  .join("\n")}
+</urlset>`;
+
+  res.type("application/xml").send(xml);
 });
 
 app.get("/impressum", async (_req, res) => {

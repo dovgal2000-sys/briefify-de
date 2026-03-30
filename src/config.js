@@ -19,6 +19,7 @@ export function getServerConfig() {
     openAiModel: process.env.OPENAI_MODEL || "gpt-5",
     analysisPrompt: process.env.OPENAI_ANALYSIS_PROMPT || DEFAULT_ANALYSIS_PROMPT,
     appName: process.env.APP_NAME || "Briefify.de",
+    siteOrigin: process.env.SITE_ORIGIN || `http://localhost:${Number(process.env.PORT || 3000)}`,
     supportEmail: process.env.SUPPORT_EMAIL || "support@example.com",
     contactEmail: process.env.CONTACT_EMAIL || "privacy@example.com",
     phoneNumber: process.env.PHONE_NUMBER || "",
@@ -32,8 +33,8 @@ export function getServerConfig() {
     country: process.env.COUNTRY || "Deutschland",
     vatId: process.env.VAT_ID || "DE000000000",
     maxFileSizeBytes: Number(process.env.MAX_FILE_SIZE_BYTES || 10 * 1024 * 1024),
-    rateLimitWindowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || 10 * 60 * 1000),
-    rateLimitMaxRequests: Number(process.env.RATE_LIMIT_MAX_REQUESTS || 10),
+    rateLimitWindowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || 60 * 60 * 1000),
+    rateLimitMaxRequests: Number(process.env.RATE_LIMIT_MAX_REQUESTS || 5),
     allowedMimeTypes: ["image/jpeg", "image/png", "application/pdf"],
     allowedExtensions: ["JPG", "PNG", "PDF"],
     textExtractionMinChars: Number(process.env.TEXT_EXTRACTION_MIN_CHARS || 120)
@@ -43,6 +44,7 @@ export function getServerConfig() {
 export function getPublicConfig(config) {
   return {
     APP_NAME: config.appName,
+    SITE_ORIGIN: config.siteOrigin,
     SUPPORT_EMAIL: config.supportEmail,
     CONTACT_EMAIL: config.contactEmail,
     PHONE_NUMBER: config.phoneNumber,
@@ -55,6 +57,7 @@ export function getPublicConfig(config) {
     COUNTRY: config.country,
     VAT_ID: config.vatId,
     appName: config.appName,
+    siteOrigin: config.siteOrigin,
     supportEmail: config.supportEmail,
     contactEmail: config.contactEmail,
     phoneNumber: config.phoneNumber,

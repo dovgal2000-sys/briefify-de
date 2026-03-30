@@ -40,17 +40,22 @@ function buildUserInstruction(extraction) {
         ? "PDF схожий на скан або текст витягнувся неповно. Проаналізуй сам файл і поясни його українською."
         : "Користувач завантажив зображення листа. Спочатку прочитай документ, потім поясни його українською.";
 
+  const content = [
+    {
+      type: "input_text",
+      text: extraction.extractedText
+        ? `${extractionNote}\n\nВитягнутий текст документа:\n${extraction.extractedText}`
+        : extractionNote
+    }
+  ];
+
+  if (extraction.fileInput) {
+    content.push(extraction.fileInput);
+  }
+
   return {
     role: "user",
-    content: [
-      {
-        type: "input_text",
-        text: extraction.extractedText
-          ? `${extractionNote}\n\nВитягнутий текст документа:\n${extraction.extractedText}`
-          : extractionNote
-      },
-      extraction.fileInput
-    ]
+    content
   };
 }
 
@@ -89,7 +94,7 @@ export async function analyzeLetterWithOpenAI({ extraction, config }) {
       model: config.openAiModel,
       instructions: config.analysisPrompt,
       input: [buildUserInstruction(extraction)],
-      max_output_tokens: 1800,
+      max_output_tokens: 900,
       text: {
         format: {
           type: "json_schema",
