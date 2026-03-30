@@ -115,7 +115,8 @@ const articles = rawArticles
       category,
       coverTitle: meta.coverTitle || article.title,
       coverSubtitle: meta.coverSubtitle || category.title,
-      coverTone: meta.coverTone || "cover-guide"
+      coverTone: meta.coverTone || "cover-guide",
+      ogImagePath: `/assets/og/${article.slug}.png`
     };
   })
   .sort((left, right) => new Date(right.publishedAt) - new Date(left.publishedAt));

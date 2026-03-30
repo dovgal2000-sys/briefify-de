@@ -1,3 +1,19 @@
+function buildSocialMeta({ title, description, imageUrl, canonicalUrl, type = "website" }) {
+  return `
+  <meta property="og:type" content="${type}" />
+  <meta property="og:title" content="${title}" />
+  <meta property="og:description" content="${description}" />
+  <meta property="og:url" content="${canonicalUrl}" />
+  <meta property="og:image" content="${imageUrl}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${title}" />
+  <meta name="twitter:description" content="${description}" />
+  <meta name="twitter:image" content="${imageUrl}" />
+  <link rel="canonical" href="${canonicalUrl}" />`;
+}
+
 function layout({ title, description, body, publicConfig, extraHead = "" }) {
   return `<!DOCTYPE html>
 <html lang="uk">
@@ -9,7 +25,13 @@ function layout({ title, description, body, publicConfig, extraHead = "" }) {
   ${extraHead}
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
   <link rel="icon" type="image/png" sizes="64x64" href="/assets/favicon.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/android-chrome-192x192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/assets/android-chrome-512x512.png" />
+  <link rel="manifest" href="/assets/site.webmanifest" />
+  <link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#0057b7" />
   <link rel="shortcut icon" href="/favicon.ico" />
+  <meta name="theme-color" content="#0057b7" />
   <link rel="stylesheet" href="/assets/styles.css" />
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
@@ -98,11 +120,20 @@ function renderArticleCards(articles) {
 }
 
 export function buildHomePage(publicConfig, featuredArticles = []) {
+  const title = `${publicConfig.appName} - Пояснення німецьких листів українською`;
+  const description =
+    "Завантажте фото або PDF з листом німецькою мовою та отримайте зрозуміле пояснення українською.";
   return layout({
-    title: `${publicConfig.appName} - Пояснення німецьких листів українською`,
-    description:
-      "Завантажте фото або PDF з листом німецькою мовою та отримайте зрозуміле пояснення українською.",
+    title,
+    description,
     publicConfig,
+    extraHead: buildSocialMeta({
+      title,
+      description,
+      imageUrl: `${publicConfig.siteOrigin}/assets/og-image.png`,
+      canonicalUrl: `${publicConfig.siteOrigin}/`,
+      type: "website"
+    }),
     body: `
       <main>
         <section class="hero">
@@ -288,10 +319,19 @@ export function buildHomePage(publicConfig, featuredArticles = []) {
 }
 
 export function buildLegalPage(titleKey, title, legalHtml, publicConfig) {
+  const pageTitle = `${title} - ${publicConfig.appName}`;
+  const description = `${titleKey} for ${publicConfig.appName}`;
   return layout({
-    title: `${title} - ${publicConfig.appName}`,
-    description: `${titleKey} for ${publicConfig.appName}`,
+    title: pageTitle,
+    description,
     publicConfig,
+    extraHead: buildSocialMeta({
+      title: pageTitle,
+      description,
+      imageUrl: `${publicConfig.siteOrigin}/assets/og-image.png`,
+      canonicalUrl: `${publicConfig.siteOrigin}/${titleKey === "kontakt" ? "kontakt" : titleKey}`,
+      type: "website"
+    }),
     body: `
       <main class="section">
         <div class="container legal-card">
@@ -324,11 +364,23 @@ export function buildArticlesIndexPage(publicConfig, articles, categories, activ
   const titlePrefix = activeCategory
     ? `Статті категорії ${activeCategory.title}`
     : "Статті про німецькі листи";
+  const title = `${titlePrefix} - ${publicConfig.appName}`;
+  const description =
+    "Добірка статей українською про німецькі офіційні листи, Jobcenter, Krankenkasse, Auslaenderbehoerde та шкільні повідомлення.";
+  const canonicalUrl = activeCategory
+    ? `${publicConfig.siteOrigin}/statti/kategoria/${activeCategory.slug}`
+    : `${publicConfig.siteOrigin}/statti`;
   return layout({
-    title: `${titlePrefix} - ${publicConfig.appName}`,
-    description:
-      "Добірка статей українською про німецькі офіційні листи, Jobcenter, Krankenkasse, Auslaenderbehoerde та шкільні повідомлення.",
+    title,
+    description,
     publicConfig,
+    extraHead: buildSocialMeta({
+      title,
+      description,
+      imageUrl: `${publicConfig.siteOrigin}/assets/og-image.png`,
+      canonicalUrl,
+      type: "website"
+    }),
     body: `
       <main class="section">
         <div class="container">
@@ -352,6 +404,8 @@ export function buildArticlesIndexPage(publicConfig, articles, categories, activ
 
 export function buildArticlePage(article, relatedArticles, publicConfig) {
   const keywords = article.keywords?.join(", ") || "";
+  const title = `${article.title} - ${publicConfig.appName}`;
+  const canonicalUrl = `${publicConfig.siteOrigin}/statti/${article.slug}`;
   const relatedHtml = relatedArticles.length
     ? `
       <section class="article-related">
@@ -364,10 +418,19 @@ export function buildArticlePage(article, relatedArticles, publicConfig) {
     : "";
 
   return layout({
-    title: `${article.title} - ${publicConfig.appName}`,
+    title,
     description: article.description,
     publicConfig,
-    extraHead: keywords ? `<meta name="keywords" content="${keywords}" />` : "",
+    extraHead: `
+      ${keywords ? `<meta name="keywords" content="${keywords}" />` : ""}
+      ${buildSocialMeta({
+        title,
+        description: article.description,
+        imageUrl: `${publicConfig.siteOrigin}${article.ogImagePath || "/assets/og-image.png"}`,
+        canonicalUrl,
+        type: "article"
+      })}
+    `,
     body: `
       <main class="section">
         <article class="container article-shell">
