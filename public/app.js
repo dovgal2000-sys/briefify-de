@@ -3,6 +3,48 @@ const fileInput = document.querySelector("#letter");
 const statusBox = document.querySelector("#status-box");
 const resultCard = document.querySelector("#result-card");
 const copyButton = document.querySelector("#copy-reply");
+const filePreview = document.querySelector("#file-preview");
+const filePreviewName = document.querySelector("#file-preview-name");
+const imagePreview = document.querySelector("#image-preview");
+const pdfPreview = document.querySelector("#pdf-preview");
+let previewObjectUrl = "";
+
+function resetPreview() {
+  if (previewObjectUrl) {
+    URL.revokeObjectURL(previewObjectUrl);
+    previewObjectUrl = "";
+  }
+
+  filePreview?.classList.add("hidden");
+  imagePreview?.classList.add("hidden");
+  pdfPreview?.classList.add("hidden");
+
+  if (imagePreview) imagePreview.src = "";
+  if (pdfPreview) pdfPreview.src = "";
+  if (filePreviewName) filePreviewName.textContent = "";
+}
+
+function renderPreview(file) {
+  resetPreview();
+
+  if (!file || !filePreview || !filePreviewName) return;
+
+  filePreview.classList.remove("hidden");
+  filePreviewName.textContent = file.name;
+  previewObjectUrl = URL.createObjectURL(file);
+
+  if (file.type === "application/pdf") {
+    pdfPreview.classList.remove("hidden");
+    pdfPreview.src = previewObjectUrl;
+    return;
+  }
+
+  if (file.type.startsWith("image/")) {
+    imagePreview.classList.remove("hidden");
+    imagePreview.src = previewObjectUrl;
+    return;
+  }
+}
 
 function setStatus(message, tone = "info") {
   statusBox.textContent = message;
@@ -39,6 +81,16 @@ function renderResult(data) {
 
   resultCard.classList.remove("hidden");
 }
+
+fileInput?.addEventListener("change", () => {
+  const file = fileInput.files?.[0];
+  if (!file) {
+    resetPreview();
+    return;
+  }
+
+  renderPreview(file);
+});
 
 form?.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -86,4 +138,8 @@ copyButton?.addEventListener("click", async () => {
   } catch (_error) {
     setStatus("Не вдалося скопіювати текст автоматично. Скопіюйте його вручну.", "error");
   }
+});
+
+window.addEventListener("beforeunload", () => {
+  resetPreview();
 });

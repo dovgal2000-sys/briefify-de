@@ -4,6 +4,7 @@ import multer from "multer";
 
 import { getPublicConfig, getServerConfig } from "./src/config.js";
 import { extractDocumentPayload } from "./src/document.js";
+import { getLegalContent } from "./src/legal.js";
 import { analyzeLetterWithOpenAI } from "./src/openai.js";
 import { createRateLimiter } from "./src/rate-limit.js";
 import { buildHomePage, buildLegalPage } from "./src/templates.js";
@@ -38,16 +39,35 @@ app.get("/index.htm", (_req, res) => {
   res.redirect(301, "/");
 });
 
-app.get("/impressum", (_req, res) => {
-  res.type("html").send(buildLegalPage("impressum", publicConfig));
+app.get("/impressum", async (_req, res) => {
+  try {
+    const legalHtml = await getLegalContent("impressum", publicConfig);
+    res.type("html").send(buildLegalPage("impressum", "Impressum", legalHtml, publicConfig));
+  } catch (error) {
+    console.error("[briefify] impressum failed:", error.message);
+    res.status(500).send("Impressum content is unavailable.");
+  }
 });
 
-app.get("/datenschutz", (_req, res) => {
-  res.type("html").send(buildLegalPage("datenschutz", publicConfig));
+app.get("/datenschutz", async (_req, res) => {
+  try {
+    const legalHtml = await getLegalContent("datenschutz", publicConfig);
+    res.type("html").send(
+      buildLegalPage("datenschutz", "Datenschutzerklärung", legalHtml, publicConfig)
+    );
+  } catch (error) {
+    console.error("[briefify] datenschutz failed:", error.message);
+    res.status(500).send("Datenschutz content is unavailable.");
+  }
 });
 
 app.get("/kontakt", (_req, res) => {
-  res.type("html").send(buildLegalPage("kontakt", publicConfig));
+  const legalHtml = `
+    <h1>Kontakt</h1>
+    <p>Питання щодо сервісу, приватності або прав користувача можна надсилати на:</p>
+    <p><a href="mailto:${publicConfig.contactEmail}">${publicConfig.contactEmail}</a></p>
+  `;
+  res.type("html").send(buildLegalPage("kontakt", "Kontakt", legalHtml, publicConfig));
 });
 
 app.get("/api/public-config", (_req, res) => {
