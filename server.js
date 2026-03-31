@@ -1,6 +1,8 @@
 import "dotenv/config";
 import express from "express";
 import multer from "multer";
+import { appendFileSync } from "node:fs";
+import path from "node:path";
 
 import {
   getAllArticles,
@@ -27,6 +29,35 @@ const publicConfig = getPublicConfig(config);
 const articles = getAllArticles();
 const categories = getAllCategories();
 const MIN_HUMAN_FILL_MS = 1500;
+const bootstrapLogCandidates = [
+  process.env.HOME ? path.join(process.env.HOME, "briefify-bootstrap.log") : "",
+  path.join(process.cwd(), "briefify-bootstrap.log")
+].filter(Boolean);
+
+function writeBootstrapLog(message) {
+  const line = `[${new Date().toISOString()}] ${message}\n`;
+  for (const candidate of bootstrapLogCandidates) {
+    try {
+      appendFileSync(candidate, line);
+      break;
+    } catch {
+      // Ignore bootstrap logging failures so startup can continue.
+    }
+  }
+}
+
+process.on("uncaughtException", (error) => {
+  writeBootstrapLog(`uncaughtException: ${error.stack || error.message}`);
+});
+
+process.on("unhandledRejection", (error) => {
+  const details = error instanceof Error ? error.stack || error.message : String(error);
+  writeBootstrapLog(`unhandledRejection: ${details}`);
+});
+
+writeBootstrapLog(
+  `boot start; cwd=${process.cwd()}; node=${process.version}; env.PORT=${process.env.PORT || ""}; config.port=${config.port}`
+);
 
 async function validateTurnstileToken(token, remoteIp, secretKey) {
   const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
@@ -299,5 +330,6 @@ app.use((error, _req, res, _next) => {
 });
 
 app.listen(config.port, () => {
+  writeBootstrapLog(`server listening on port ${config.port}`);
   console.log(`[briefify] server listening on http://localhost:${config.port}`);
 });
