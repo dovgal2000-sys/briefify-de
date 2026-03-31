@@ -66,6 +66,10 @@ app.get("/favicon.ico", (_req, res) => {
   res.redirect(301, "/assets/favicon.svg");
 });
 
+app.get("/ads.txt", (_req, res) => {
+  res.sendFile("ads.txt", { root: process.cwd() });
+});
+
 app.get("/", (_req, res) => {
   res.type("html").send(buildHomePage(publicConfig, articles.slice(0, 6)));
 });

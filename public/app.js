@@ -10,12 +10,16 @@ const imagePreview = document.querySelector("#image-preview");
 const pdfPreview = document.querySelector("#pdf-preview");
 const cookieBanner = document.querySelector("#cookie-banner");
 const cookieAccept = document.querySelector("#cookie-accept");
+const cookieNecessary = document.querySelector("#cookie-necessary");
 const consentInput = document.querySelector("#consent");
 const formLoadedAtInput = document.querySelector("#form-loaded-at");
 const replyEmailInput = document.querySelector("#reply-email");
+const siteConfig = document.querySelector("#site-config");
 let previewObjectUrl = "";
 const COOKIE_BANNER_KEY = "briefify_cookie_notice_closed";
+const COOKIE_PREFERENCES_KEY = "briefify_cookie_preferences";
 const MIN_HUMAN_FILL_MS = 1800;
+const iubendaEnabled = siteConfig?.dataset.iubendaEnabled === "true";
 
 function resetPreview() {
   if (previewObjectUrl) {
@@ -203,20 +207,117 @@ window.addEventListener("beforeunload", () => {
 });
 
 function initCookieBanner() {
-  if (!cookieBanner || !cookieAccept) return;
+  if (iubendaEnabled) return;
+  if (!cookieBanner || !cookieAccept || !cookieNecessary) return;
 
-  const dismissed = window.localStorage.getItem(COOKIE_BANNER_KEY) === "true";
-  if (!dismissed) {
+  const storedPreferences = window.localStorage.getItem(COOKIE_PREFERENCES_KEY);
+  if (!storedPreferences) {
     cookieBanner.classList.remove("hidden");
   }
 
   cookieAccept.addEventListener("click", () => {
+    window.localStorage.setItem(
+      COOKIE_PREFERENCES_KEY,
+      JSON.stringify({ necessary: true, ads: true })
+    );
+    window.localStorage.setItem(COOKIE_BANNER_KEY, "true");
+    cookieBanner.classList.add("hidden");
+    initAdsense();
+  });
+
+  cookieNecessary.addEventListener("click", () => {
+    window.localStorage.setItem(
+      COOKIE_PREFERENCES_KEY,
+      JSON.stringify({ necessary: true, ads: false })
+    );
     window.localStorage.setItem(COOKIE_BANNER_KEY, "true");
     cookieBanner.classList.add("hidden");
   });
 }
 
+function getCookiePreferences() {
+  try {
+    return JSON.parse(window.localStorage.getItem(COOKIE_PREFERENCES_KEY) || "null");
+  } catch (_error) {
+    return null;
+  }
+}
+
+function loadAdsenseScript(client) {
+  if (!client) return Promise.resolve(false);
+  if (document.querySelector("script[data-adsense-loader='true']")) {
+    return Promise.resolve(true);
+  }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.async = true;
+    script.dataset.adsenseLoader = "true";
+    script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(client)}`;
+    script.crossOrigin = "anonymous";
+    script.onload = () => resolve(true);
+    script.onerror = () => reject(new Error("Не вдалося завантажити Google Ads."));
+    document.head.appendChild(script);
+  });
+}
+
+async function initAdsense(forceByConsent = false) {
+  const preferences = getCookiePreferences();
+  const client = siteConfig?.dataset.adsenseClient || "";
+  const adSlots = document.querySelectorAll(".adsense-slot");
+  const canLoadAds = iubendaEnabled ? forceByConsent : preferences?.ads;
+
+  if (!client || !adSlots.length || !canLoadAds) {
+    return;
+  }
+
+  try {
+    await loadAdsenseScript(client);
+
+    adSlots.forEach((slot) => {
+      if (slot.dataset.adsInitialized === "true") return;
+
+      const ins = document.createElement("ins");
+      ins.className = "adsbygoogle";
+      ins.style.display = "block";
+      ins.dataset.adClient = slot.dataset.adClient || client;
+      ins.dataset.adSlot = slot.dataset.adSlot || "";
+      ins.dataset.adFormat = slot.dataset.adFormat || "auto";
+      ins.dataset.fullWidthResponsive = slot.dataset.fullWidthResponsive || "true";
+
+      slot.innerHTML = "";
+      slot.appendChild(ins);
+
+      try {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+        slot.dataset.adsInitialized = "true";
+      } catch (_error) {
+        slot.innerHTML =
+          "<p class='ad-consent-note'>Google Ads тимчасово недоступний для цього блоку.</p>";
+      }
+    });
+  } catch (_error) {
+    document.querySelectorAll(".adsense-slot").forEach((slot) => {
+      if (!slot.textContent.trim()) {
+        slot.innerHTML =
+          "<p class='ad-consent-note'>Не вдалося завантажити рекламний блок.</p>";
+      }
+    });
+  }
+}
+
 initCookieBanner();
+initAdsense();
+
+if (iubendaEnabled) {
+  window.addEventListener("briefify:iubenda-consent-read", () => {
+    initAdsense(true);
+  });
+
+  if (window.__briefifyIubendaConsentReady) {
+    initAdsense(true);
+  }
+}
 
 if (formLoadedAtInput) {
   formLoadedAtInput.value = String(Date.now());

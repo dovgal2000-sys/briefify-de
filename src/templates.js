@@ -14,10 +14,73 @@ function buildSocialMeta({ title, description, imageUrl, canonicalUrl, type = "w
   <link rel="canonical" href="${canonicalUrl}" />`;
 }
 
+function buildIubendaHeadStart(publicConfig) {
+  if (!publicConfig.iubendaSiteId || !publicConfig.iubendaCookiePolicyId) {
+    return "";
+  }
+
+  return `
+  <script>
+    var _iub = _iub || [];
+    _iub.csConfiguration = {
+      siteId: ${JSON.stringify(publicConfig.iubendaSiteId)},
+      cookiePolicyId: ${JSON.stringify(publicConfig.iubendaCookiePolicyId)},
+      lang: ${JSON.stringify(publicConfig.iubendaLang || "de")},
+      storage: { useSiteId: true },
+      enableTcf: true,
+      askConsentAtCookiePolicyUpdate: true,
+      banner: {
+        position: "float-bottom-center",
+        acceptButtonDisplay: true,
+        customizeButtonDisplay: true,
+        rejectButtonDisplay: true,
+        closeButtonDisplay: false,
+        closeButtonRejects: true,
+        listPurposes: true
+      },
+      callback: {
+        onConsentRead: function () {
+          window.__briefifyIubendaConsentReady = true;
+          window.dispatchEvent(new CustomEvent("briefify:iubenda-consent-read"));
+        }
+      }
+    };
+  </script>
+  <script type="text/javascript" src="https://cs.iubenda.com/autoblocking/${publicConfig.iubendaSiteId}.js"></script>
+  <script type="text/javascript" src="//cdn.iubenda.com/cs/iubenda_cs.js" charset="UTF-8" async></script>`;
+}
+
+function renderAdSlot({ slotId, client, label, modifier = "" }) {
+  if (!client || !slotId) {
+    return "";
+  }
+
+  return `
+    <section class="ad-slot ${modifier}">
+      <div class="ad-slot-head">
+        <span>${label}</span>
+        <small>Google Ads</small>
+      </div>
+      <div
+        class="adsense-slot"
+        data-ad-client="${client}"
+        data-ad-slot="${slotId}"
+        data-ad-format="auto"
+        data-full-width-responsive="true"
+      >
+        <p class="ad-consent-note">
+          Рекламний блок з'явиться після згоди на рекламні cookies.
+        </p>
+      </div>
+    </section>
+  `;
+}
+
 function layout({ title, description, body, publicConfig, extraHead = "" }) {
   return `<!DOCTYPE html>
 <html lang="uk">
 <head>
+  ${buildIubendaHeadStart(publicConfig)}
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${title}</title>
@@ -36,6 +99,14 @@ function layout({ title, description, body, publicConfig, extraHead = "" }) {
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
+  <div
+    id="site-config"
+    data-iubenda-enabled="${publicConfig.iubendaSiteId && publicConfig.iubendaCookiePolicyId ? "true" : "false"}"
+    data-adsense-client="${publicConfig.adsenseClient || ""}"
+    data-adsense-home-slot="${publicConfig.adsenseHomeSlot || ""}"
+    data-adsense-article-slot="${publicConfig.adsenseArticleSlot || ""}"
+    hidden
+  ></div>
   <header class="site-header">
     <div class="container nav">
       <a class="brand" href="/">
@@ -61,6 +132,11 @@ function layout({ title, description, body, publicConfig, extraHead = "" }) {
         <a href="/impressum">Impressum</a>
         <a href="/datenschutz">Datenschutzerklärung</a>
         <a href="/kontakt">Kontakt</a>
+        ${
+          publicConfig.iubendaSiteId && publicConfig.iubendaCookiePolicyId
+            ? '<a href="#" class="iubenda-cs-preferences-link">Cookie-Einstellungen</a>'
+            : ""
+        }
       </div>
       <div>
         <h4>Контакти</h4>
@@ -69,7 +145,10 @@ function layout({ title, description, body, publicConfig, extraHead = "" }) {
       </div>
     </div>
   </footer>
-  <div id="cookie-banner" class="cookie-banner hidden" role="dialog" aria-live="polite" aria-label="Повідомлення про cookies">
+  ${
+    publicConfig.iubendaSiteId && publicConfig.iubendaCookiePolicyId
+      ? ""
+      : `<div id="cookie-banner" class="cookie-banner hidden" role="dialog" aria-live="polite" aria-label="Повідомлення про cookies">
     <div class="cookie-banner-inner">
       <div class="cookie-copy">
         <p>
@@ -77,13 +156,20 @@ function layout({ title, description, body, publicConfig, extraHead = "" }) {
           Детальніше читайте у <a href="/datenschutz">Datenschutzerklärung</a>.
         </p>
         <p class="cookie-copy-secondary">
+          Якщо ви погодитесь на рекламу, ми також зможемо завантажити Google Ads.
+        </p>
+        <p class="cookie-copy-secondary">
           Wir verwenden technische Cookies und lokale Speicherung, damit die Website korrekt funktioniert.
           Weitere Informationen finden Sie in der <a href="/datenschutz">Datenschutzerklärung</a>.
         </p>
       </div>
-      <button id="cookie-accept" class="secondary-button" type="button">Зрозуміло</button>
+      <div class="cookie-actions">
+        <button id="cookie-necessary" class="secondary-button" type="button">Лише необхідні</button>
+        <button id="cookie-accept" class="primary-button" type="button">Прийняти рекламу</button>
+      </div>
     </div>
-  </div>
+  </div>`
+  }
 </body>
 </html>`;
 }
@@ -294,6 +380,13 @@ export function buildHomePage(publicConfig, featuredArticles = []) {
           </div>
         </section>
 
+        ${renderAdSlot({
+          slotId: publicConfig.adsenseHomeSlot,
+          client: publicConfig.adsenseClient,
+          label: "Реклама",
+          modifier: "container ad-slot-home"
+        })}
+
         <section class="section">
           <div class="container">
             <div class="section-head">
@@ -461,6 +554,13 @@ export function buildArticlePage(article, relatedArticles, publicConfig) {
           <div class="article-content">
             ${article.body}
           </div>
+
+          ${renderAdSlot({
+            slotId: publicConfig.adsenseArticleSlot,
+            client: publicConfig.adsenseClient,
+            label: "Реклама в статті",
+            modifier: "ad-slot-article"
+          })}
 
           <section class="article-cta-box">
             <h2>Потрібно розібрати реальний лист?</h2>

@@ -523,6 +523,12 @@ h2 {
   opacity: 0.92;
 }
 
+.cookie-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .footer-grid {
   display: grid;
   grid-template-columns: 1.3fr 1fr 1fr;
@@ -777,6 +783,47 @@ h2 {
 
 .article-related h2 {
   margin-bottom: 20px;
+}
+
+.ad-slot {
+  display: grid;
+  gap: 10px;
+  margin: 0 auto 32px;
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(0, 87, 183, 0.12);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow);
+}
+
+.ad-slot-home {
+  width: min(1120px, calc(100% - 32px));
+}
+
+.ad-slot-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.adsense-slot {
+  min-height: 120px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  border: 1px dashed rgba(0, 87, 183, 0.22);
+  background: linear-gradient(135deg, rgba(0, 87, 183, 0.04), rgba(255, 215, 0, 0.08));
+}
+
+.ad-consent-note {
+  margin: 0;
+  padding: 18px;
+  text-align: center;
+  color: var(--muted);
 }
 
 @media (max-width: 900px) {
