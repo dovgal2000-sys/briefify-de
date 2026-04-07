@@ -487,7 +487,7 @@ h2 {
   padding: 24px;
 }
 
-.step-card strong {
+.step-card > strong {
   display: inline-flex;
   width: 38px;
   height: 38px;

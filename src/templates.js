@@ -52,7 +52,7 @@ function buildIubendaHeadStart(publicConfig) {
   <script type="text/javascript" src="//cdn.iubenda.com/cs/iubenda_cs.js" charset="UTF-8" async></script>`;
 }
 
-function renderAdSlot({ slotId, client, label, modifier = "" }) {
+function renderAdSlot({ slotId, client, label, note, modifier = "" }) {
   if (!client || !slotId) {
     return "";
   }
@@ -71,7 +71,7 @@ function renderAdSlot({ slotId, client, label, modifier = "" }) {
         data-full-width-responsive="true"
       >
         <p class="ad-consent-note">
-          Рекламний блок з'явиться після згоди на рекламні cookies.
+          ${note}
         </p>
       </div>
     </section>
@@ -198,8 +198,10 @@ function layout({ title, description, body, publicConfig, extraHead = "", locale
 </html>`;
 }
 
-function formatArticleDate(isoDate) {
-  return new Intl.DateTimeFormat("uk-UA", {
+function formatArticleDate(isoDate, locale = "uk") {
+  const dateLocale = locale === "de" ? "de-DE" : "uk-UA";
+
+  return new Intl.DateTimeFormat(dateLocale, {
     day: "numeric",
     month: "long",
     year: "numeric"
@@ -217,7 +219,7 @@ function formatAdminDateTime(dateTime, timeZone) {
   }).format(new Date(dateTime));
 }
 
-function renderArticleCards(articles) {
+function renderArticleCards(articles, { locale = "uk", t }) {
   return articles
     .map(
       (article) => `
@@ -229,11 +231,11 @@ function renderArticleCards(articles) {
           </div>
           <div class="article-card-topline">
             <span class="article-category-chip">${article.category.title}</span>
-            <span class="article-card-meta">${formatArticleDate(article.publishedAt)} · ${article.readingTime}</span>
+            <span class="article-card-meta">${formatArticleDate(article.publishedAt, locale)} · ${article.readingTime}</span>
           </div>
           <h3><a href="/statti/${article.slug}">${article.title}</a></h3>
           <p>${article.description}</p>
-          <a class="article-card-link" href="/statti/${article.slug}">Читати статтю</a>
+          <a class="article-card-link" href="/statti/${article.slug}">${t("articleReadMore")}</a>
         </article>
       `
     )
@@ -418,7 +420,8 @@ export function buildHomePage(publicConfig, featuredArticles = [], { locale = "u
         ${renderAdSlot({
           slotId: publicConfig.adsenseHomeSlot,
           client: publicConfig.adsenseClient,
-          label: "Реклама",
+          label: t("adLabel"),
+          note: t("adConsentNote"),
           modifier: "container ad-slot-home"
         })}
 
@@ -432,7 +435,7 @@ export function buildHomePage(publicConfig, featuredArticles = [], { locale = "u
               </p>
             </div>
             <div class="article-grid">
-              ${renderArticleCards(featuredArticles)}
+                ${renderArticleCards(featuredArticles, { locale, t })}
             </div>
             <div class="section-cta">
               <a class="secondary-button" href="/statti">${t("seoButton")}</a>
@@ -528,7 +531,7 @@ export function buildArticlesIndexPage(publicConfig, articles, categories, activ
           </div>
           ${renderCategoryFilters(categories, activeCategory?.slug || "", t)}
           <div class="article-grid article-grid-full">
-            ${renderArticleCards(articles)}
+              ${renderArticleCards(articles, { locale, t })}
           </div>
         </div>
       </main>
@@ -545,7 +548,7 @@ export function buildArticlePage(article, relatedArticles, publicConfig, { local
       <section class="article-related">
         <h2>${t("articleRelated")}</h2>
         <div class="article-grid">
-          ${renderArticleCards(relatedArticles)}
+                ${renderArticleCards(relatedArticles, { locale, t })}
         </div>
       </section>
     `
@@ -589,7 +592,7 @@ export function buildArticlePage(article, relatedArticles, publicConfig, { local
             <h1>${article.title}</h1>
             <p class="lead">${article.description}</p>
             <div class="article-meta">
-              <span>${t("articleDate")}: ${formatArticleDate(article.publishedAt)}</span>
+              <span>${t("articleDate")}: ${formatArticleDate(article.publishedAt, locale)}</span>
               <span>${t("articleReadingTime")}: ${article.readingTime}</span>
               <span>${t("articleCategory")}: <a href="/statti/kategoria/${article.category.slug}">${article.category.title}</a></span>
             </div>
@@ -602,7 +605,8 @@ export function buildArticlePage(article, relatedArticles, publicConfig, { local
           ${renderAdSlot({
             slotId: publicConfig.adsenseArticleSlot,
             client: publicConfig.adsenseClient,
-            label: "Реклама в статті",
+            label: t("adArticleLabel"),
+            note: t("adConsentNote"),
             modifier: "ad-slot-article"
           })}
 

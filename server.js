@@ -38,8 +38,6 @@ import {
 const app = express();
 const config = getServerConfig();
 const publicConfig = getPublicConfig(config);
-const articles = getAllArticles();
-const categories = getAllCategories();
 const statsStore = createStatsStore(config);
 const MIN_HUMAN_FILL_MS = 1500;
 const bootstrapLogCandidates = [
@@ -193,6 +191,7 @@ app.get("/ads.txt", (_req, res) => {
 });
 
 app.get("/", (_req, res) => {
+  const articles = getAllArticles(res.locals.locale);
   res.type("html").send(
     buildHomePage(publicConfig, articles.slice(0, 6), { locale: res.locals.locale, t: res.locals.t })
   );
@@ -207,6 +206,8 @@ app.get("/index.htm", (_req, res) => {
 });
 
 app.get("/statti", (_req, res) => {
+  const articles = getAllArticles(res.locals.locale);
+  const categories = getAllCategories(res.locals.locale);
   res.type("html").send(
     buildArticlesIndexPage(publicConfig, articles, categories, null, {
       locale: res.locals.locale,
@@ -217,7 +218,8 @@ app.get("/statti", (_req, res) => {
 });
 
 app.get("/statti/kategoria/:categorySlug", (req, res) => {
-  const category = getCategoryBySlug(req.params.categorySlug);
+  const categories = getAllCategories(res.locals.locale);
+  const category = getCategoryBySlug(req.params.categorySlug, res.locals.locale);
 
   if (!category) {
     return res.status(404).type("html").send(buildLegalPage(
@@ -233,7 +235,7 @@ app.get("/statti/kategoria/:categorySlug", (req, res) => {
     ));
   }
 
-  const filteredArticles = getArticlesByCategory(category.slug);
+  const filteredArticles = getArticlesByCategory(category.slug, res.locals.locale);
   return res.type("html").send(
     buildArticlesIndexPage(publicConfig, filteredArticles, categories, category, {
       locale: res.locals.locale,
@@ -244,7 +246,7 @@ app.get("/statti/kategoria/:categorySlug", (req, res) => {
 });
 
 app.get("/statti/:slug", (req, res) => {
-  const article = getArticleBySlug(req.params.slug);
+  const article = getArticleBySlug(req.params.slug, res.locals.locale);
 
   if (!article) {
     return res.status(404).type("html").send(buildLegalPage(
@@ -260,7 +262,7 @@ app.get("/statti/:slug", (req, res) => {
     ));
   }
 
-  const relatedArticles = articles
+  const relatedArticles = getAllArticles(res.locals.locale)
     .filter((candidate) => candidate.slug !== article.slug)
     .slice(0, 3);
 
@@ -280,6 +282,7 @@ app.get("/robots.txt", (_req, res) => {
 
 app.get("/sitemap.xml", (_req, res) => {
   const baseUrl = publicConfig.siteOrigin.replace(/\/$/, "");
+  const articles = getAllArticles("uk");
   const urls = [
     "/",
     "/statti",
