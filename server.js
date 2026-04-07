@@ -3,6 +3,7 @@ import express from "express";
 import multer from "multer";
 import { appendFileSync } from "node:fs";
 import path from "node:path";
+import { DateTime } from "luxon";
 
 import {
   getAllArticles,
@@ -11,12 +12,22 @@ import {
   getArticlesByCategory,
   getCategoryBySlug
 } from "./src/articles/index.js";
+import {
+  buildAdminCookie,
+  buildAdminLogoutCookie,
+  createAdminSession,
+  parseCookies,
+  verifyAdminSession
+} from "./src/admin-auth.js";
 import { getPublicConfig, getServerConfig } from "./src/config.js";
 import { extractDocumentPayload } from "./src/document.js";
 import { getLegalContent } from "./src/legal.js";
 import { analyzeLetterWithOpenAI } from "./src/openai.js";
 import { createRateLimiter } from "./src/rate-limit.js";
+import { createStatsStore, getDefaultReportRange, parseAdminDateRange } from "./src/stats.js";
 import {
+  buildAdminDashboardPage,
+  buildAdminLoginPage,
   buildArticlePage,
   buildArticlesIndexPage,
   buildHomePage,
@@ -28,6 +39,7 @@ const config = getServerConfig();
 const publicConfig = getPublicConfig(config);
 const articles = getAllArticles();
 const categories = getAllCategories();
+const statsStore = createStatsStore(config);
 const MIN_HUMAN_FILL_MS = 1500;
 const bootstrapLogCandidates = [
   process.env.HOME ? path.join(process.env.HOME, "briefify-bootstrap.log") : "",
@@ -89,9 +101,62 @@ const rateLimiter = createRateLimiter({
   maxRequests: config.rateLimitMaxRequests
 });
 
+function isAdminConfigured() {
+  return Boolean(config.adminUsername && config.adminPassword && config.adminSessionSecret);
+}
+
+function toDateTimeLocalValue(dateTime) {
+  return dateTime.toFormat("yyyy-MM-dd'T'HH:mm");
+}
+
+function buildPresetHref(label, startLocal, endLocal) {
+  const params = new URLSearchParams({
+    start: toDateTimeLocalValue(startLocal),
+    end: toDateTimeLocalValue(endLocal)
+  });
+
+  return {
+    label,
+    href: `/admin?${params.toString()}`
+  };
+}
+
+function buildAdminPresets() {
+  const endLocal = DateTime.now().setZone(config.adminTimeZone);
+  return [
+    buildPresetHref("Остання година", endLocal.minus({ hours: 1 }), endLocal),
+    buildPresetHref("Остання доба", endLocal.minus({ days: 1 }), endLocal),
+    buildPresetHref("Останній тиждень", endLocal.minus({ days: 7 }), endLocal),
+    buildPresetHref("З початку місяця", endLocal.startOf("month"), endLocal)
+  ];
+}
+
+function ensureAdminAccess(req, res) {
+  if (!isAdminConfigured()) {
+    res.status(503).type("html").send(
+      buildAdminLoginPage(publicConfig, {
+        errorMessage:
+          "Адмінка ще не налаштована. Додайте ADMIN_USERNAME, ADMIN_PASSWORD і ADMIN_SESSION_SECRET."
+      })
+    );
+    return false;
+  }
+
+  const cookies = parseCookies(req.headers.cookie || "");
+  const sessionToken = cookies[config.adminCookieName];
+
+  if (!verifyAdminSession(sessionToken, config)) {
+    res.redirect("/admin/login");
+    return false;
+  }
+
+  return true;
+}
+
 app.disable("x-powered-by");
 app.use("/assets", express.static("public", { extensions: ["css", "js"] }));
 app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: false }));
 
 app.get("/favicon.ico", (_req, res) => {
   res.redirect(301, "/assets/favicon.svg");
@@ -232,6 +297,101 @@ app.get("/api/public-config", (_req, res) => {
   });
 });
 
+app.get("/admin/login", (req, res) => {
+  if (!isAdminConfigured()) {
+    return res.status(503).type("html").send(
+      buildAdminLoginPage(publicConfig, {
+        errorMessage:
+          "Адмінка ще не налаштована. Додайте ADMIN_USERNAME, ADMIN_PASSWORD і ADMIN_SESSION_SECRET."
+      })
+    );
+  }
+
+  const cookies = parseCookies(req.headers.cookie || "");
+  if (verifyAdminSession(cookies[config.adminCookieName], config)) {
+    return res.redirect("/admin");
+  }
+
+  return res.type("html").send(
+    buildAdminLoginPage(publicConfig, {
+      errorMessage: req.query.error === "invalid" ? "Неправильний логін або пароль." : ""
+    })
+  );
+});
+
+app.post("/admin/login", (req, res) => {
+  if (!isAdminConfigured()) {
+    return res.status(503).type("html").send(
+      buildAdminLoginPage(publicConfig, {
+        errorMessage:
+          "Адмінка ще не налаштована. Додайте ADMIN_USERNAME, ADMIN_PASSWORD і ADMIN_SESSION_SECRET."
+      })
+    );
+  }
+
+  const username = String(req.body?.username || "").trim();
+  const password = String(req.body?.password || "");
+
+  if (username !== config.adminUsername || password !== config.adminPassword) {
+    return res.redirect("/admin/login?error=invalid");
+  }
+
+  res.setHeader("Set-Cookie", buildAdminCookie(createAdminSession(config), config));
+  return res.redirect("/admin");
+});
+
+app.post("/admin/logout", (_req, res) => {
+  res.setHeader("Set-Cookie", buildAdminLogoutCookie(config));
+  return res.redirect("/admin/login");
+});
+
+app.get("/admin", (req, res) => {
+  if (!ensureAdminAccess(req, res)) {
+    return;
+  }
+
+  const defaultRange = getDefaultReportRange(config.adminTimeZone);
+  const parsedRange =
+    req.query.start && req.query.end
+      ? parseAdminDateRange({
+          startLocalRaw: String(req.query.start),
+          endLocalRaw: String(req.query.end),
+          timeZone: config.adminTimeZone
+        })
+      : {
+          ok: true,
+          ...defaultRange
+        };
+
+  const effectiveRange = parsedRange.ok
+    ? parsedRange
+    : {
+        ok: true,
+        ...defaultRange
+      };
+
+  const report = statsStore.getReport({
+    startUtcIso: effectiveRange.startUtcIso,
+    endUtcIso: effectiveRange.endUtcIso
+  });
+
+  return res.type("html").send(
+    buildAdminDashboardPage(publicConfig, {
+      quickStats: statsStore.getQuickStats(),
+      report,
+      reportRange: {
+        startValue: toDateTimeLocalValue(effectiveRange.startLocal),
+        endValue: toDateTimeLocalValue(effectiveRange.endLocal),
+        startIso: effectiveRange.startUtcIso,
+        endIso: effectiveRange.endUtcIso
+      },
+      presets: buildAdminPresets(),
+      errorMessage: parsedRange.ok ? "" : parsedRange.error,
+      timeZone: config.adminTimeZone
+    })
+  );
+});
+
 app.post("/api/analyze-letter", rateLimiter, upload.single("letter"), async (req, res) => {
   try {
     if (!config.turnstileSecretKey) {
@@ -289,6 +449,12 @@ app.post("/api/analyze-letter", rateLimiter, upload.single("letter"), async (req
       file: req.file,
       extraction,
       config
+    });
+
+    statsStore.recordTranslationEvent({
+      mimeType: req.file.mimetype,
+      extractionMode: extraction.mode,
+      originalFilename: req.file.originalname
     });
 
     return res.json({

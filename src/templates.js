@@ -182,6 +182,17 @@ function formatArticleDate(isoDate) {
   }).format(new Date(isoDate));
 }
 
+function formatAdminDateTime(dateTime, timeZone) {
+  return new Intl.DateTimeFormat("uk-UA", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone
+  }).format(new Date(dateTime));
+}
+
 function renderArticleCards(articles) {
   return articles
     .map(
@@ -573,6 +584,180 @@ export function buildArticlePage(article, relatedArticles, publicConfig) {
 
           ${relatedHtml}
         </article>
+      </main>
+    `
+  });
+}
+
+export function buildAdminLoginPage(publicConfig, { errorMessage = "" } = {}) {
+  const title = `Адмінка - вхід - ${publicConfig.appName}`;
+  const description = "Вхід до внутрішньої статистики Briefify.";
+
+  return layout({
+    title,
+    description,
+    publicConfig,
+    body: `
+      <main class="section">
+        <div class="container admin-shell">
+          <section class="admin-login-card">
+            <span class="eyebrow">Адмінка</span>
+            <h1>Вхід до статистики</h1>
+            <p class="lead">Увійдіть під адмінським логіном, щоб переглядати звіти по перекладах листів.</p>
+            ${
+              errorMessage
+                ? `<div class="admin-alert admin-alert-error">${errorMessage}</div>`
+                : ""
+            }
+            <form class="admin-form" method="post" action="/admin/login">
+              <label class="admin-field">
+                <span>Логін</span>
+                <input name="username" type="text" autocomplete="username" required />
+              </label>
+              <label class="admin-field">
+                <span>Пароль</span>
+                <input name="password" type="password" autocomplete="current-password" required />
+              </label>
+              <button class="primary-button" type="submit">Увійти</button>
+            </form>
+          </section>
+        </div>
+      </main>
+    `
+  });
+}
+
+export function buildAdminDashboardPage(
+  publicConfig,
+  {
+    quickStats,
+    report,
+    reportRange,
+    presets,
+    errorMessage = "",
+    timeZone
+  }
+) {
+  const title = `Адмінка - статистика - ${publicConfig.appName}`;
+  const description = "Статистика використання Briefify за вибраний період.";
+
+  return layout({
+    title,
+    description,
+    publicConfig,
+    body: `
+      <main class="section">
+        <div class="container admin-shell">
+          <section class="admin-panel">
+            <div class="admin-panel-head">
+              <div>
+                <span class="eyebrow">Адмінка</span>
+                <h1>Статистика перекладів листів</h1>
+                <p class="lead">Швидкі зрізи та ручний звіт за довільний період у часовій зоні ${timeZone}.</p>
+              </div>
+              <form method="post" action="/admin/logout">
+                <button class="secondary-button" type="submit">Вийти</button>
+              </form>
+            </div>
+
+            <section class="admin-stats-grid">
+              <article class="admin-stat-card">
+                <span>За останню годину</span>
+                <strong>${quickStats.lastHour}</strong>
+              </article>
+              <article class="admin-stat-card">
+                <span>За останню добу</span>
+                <strong>${quickStats.lastDay}</strong>
+              </article>
+              <article class="admin-stat-card">
+                <span>За останній тиждень</span>
+                <strong>${quickStats.lastWeek}</strong>
+              </article>
+              <article class="admin-stat-card">
+                <span>З початку місяця</span>
+                <strong>${quickStats.monthToDate}</strong>
+              </article>
+              <article class="admin-stat-card admin-stat-card-wide">
+                <span>Всього успішних перекладів</span>
+                <strong>${quickStats.total}</strong>
+              </article>
+            </section>
+
+            <section class="admin-report-card">
+              <div class="admin-report-head">
+                <h2>Звіт за період</h2>
+                <div class="admin-preset-list">
+                  ${presets
+                    .map(
+                      (preset) => `
+                        <a class="category-filter" href="${preset.href}">${preset.label}</a>
+                      `
+                    )
+                    .join("")}
+                </div>
+              </div>
+
+              ${
+                errorMessage
+                  ? `<div class="admin-alert admin-alert-error">${errorMessage}</div>`
+                  : ""
+              }
+
+              <form class="admin-form admin-range-form" method="get" action="/admin">
+                <label class="admin-field">
+                  <span>Початок</span>
+                  <input name="start" type="datetime-local" value="${reportRange.startValue}" required />
+                </label>
+                <label class="admin-field">
+                  <span>Кінець</span>
+                  <input name="end" type="datetime-local" value="${reportRange.endValue}" required />
+                </label>
+                <button class="primary-button" type="submit">Побудувати звіт</button>
+              </form>
+
+              <div class="admin-summary-grid">
+                <article class="admin-summary-card">
+                  <span>Період</span>
+                  <strong>${formatAdminDateTime(reportRange.startIso, timeZone)} - ${formatAdminDateTime(reportRange.endIso, timeZone)}</strong>
+                </article>
+                <article class="admin-summary-card">
+                  <span>Успішних перекладів</span>
+                  <strong>${report.total}</strong>
+                </article>
+              </div>
+
+              <div class="admin-table-card">
+                <h3>Розбивка за типом файлу</h3>
+                ${
+                  report.breakdownByMimeType.length
+                    ? `
+                      <table class="admin-table">
+                        <thead>
+                          <tr>
+                            <th>Тип файлу</th>
+                            <th>Кількість</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${report.breakdownByMimeType
+                            .map(
+                              (row) => `
+                                <tr>
+                                  <td>${row.mime_type}</td>
+                                  <td>${row.total}</td>
+                                </tr>
+                              `
+                            )
+                            .join("")}
+                        </tbody>
+                      </table>
+                    `
+                    : `<p class="fine-print">За цей період ще немає успішних перекладів.</p>`
+                }
+              </div>
+            </section>
+          </section>
+        </div>
       </main>
     `
   });

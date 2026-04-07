@@ -1,3 +1,5 @@
+import path from "node:path";
+
 const DEFAULT_ANALYSIS_PROMPT = `
 Ти допомагаєш українськомовному користувачу зрозуміти офіційний або побутовий лист німецькою мовою.
 Проаналізуй документ уважно та поверни JSON за схемою.
@@ -13,13 +15,14 @@ const DEFAULT_ANALYSIS_PROMPT = `
 `.trim();
 
 export function getServerConfig() {
+  const port = Number(process.env.PORT || 3000);
   return {
-    port: Number(process.env.PORT || 3000),
+    port,
     openAiApiKey: process.env.OPENAI_API_KEY || "",
     openAiModel: process.env.OPENAI_MODEL || "gpt-5",
     analysisPrompt: process.env.OPENAI_ANALYSIS_PROMPT || DEFAULT_ANALYSIS_PROMPT,
     appName: process.env.APP_NAME || "Briefify.de",
-    siteOrigin: process.env.SITE_ORIGIN || `http://localhost:${Number(process.env.PORT || 3000)}`,
+    siteOrigin: process.env.SITE_ORIGIN || `http://localhost:${port}`,
     adsenseEnabled: process.env.ENABLE_ADSENSE === "true",
     iubendaSiteId: process.env.IUBENDA_SITE_ID || "",
     iubendaCookiePolicyId: process.env.IUBENDA_COOKIE_POLICY_ID || "",
@@ -42,6 +45,13 @@ export function getServerConfig() {
     maxFileSizeBytes: Number(process.env.MAX_FILE_SIZE_BYTES || 10 * 1024 * 1024),
     rateLimitWindowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || 60 * 60 * 1000),
     rateLimitMaxRequests: Number(process.env.RATE_LIMIT_MAX_REQUESTS || 5),
+    statsDbPath: process.env.STATS_DB_PATH || path.join(process.cwd(), "data", "briefify.sqlite"),
+    adminUsername: process.env.ADMIN_USERNAME || "",
+    adminPassword: process.env.ADMIN_PASSWORD || "",
+    adminSessionSecret: process.env.ADMIN_SESSION_SECRET || "",
+    adminCookieName: process.env.ADMIN_COOKIE_NAME || "briefify_admin_session",
+    adminSessionMaxAgeMs: Number(process.env.ADMIN_SESSION_MAX_AGE_MS || 1000 * 60 * 60 * 12),
+    adminTimeZone: process.env.ADMIN_TIME_ZONE || "Europe/Berlin",
     allowedMimeTypes: ["image/jpeg", "image/png", "application/pdf"],
     allowedExtensions: ["JPG", "PNG", "PDF"],
     textExtractionMinChars: Number(process.env.TEXT_EXTRACTION_MIN_CHARS || 120)
