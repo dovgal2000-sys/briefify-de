@@ -21,6 +21,7 @@ import {
 } from "./src/admin-auth.js";
 import { getPublicConfig, getServerConfig } from "./src/config.js";
 import { extractDocumentPayload } from "./src/document.js";
+import { createTranslator, detectLocale, getFrontendMessages, normalizeLocale } from "./src/i18n.js";
 import { getLegalContent } from "./src/legal.js";
 import { analyzeLetterWithOpenAI } from "./src/openai.js";
 import { createRateLimiter } from "./src/rate-limit.js";
@@ -101,6 +102,29 @@ const rateLimiter = createRateLimiter({
   maxRequests: config.rateLimitMaxRequests
 });
 
+app.use((req, res, next) => {
+  const cookies = parseCookies(req.headers.cookie || "");
+  const locale = detectLocale({
+    queryLang: typeof req.query?.lang === "string" ? req.query.lang : "",
+    cookieLang: cookies.briefify_locale || "",
+    acceptLanguage: req.headers["accept-language"] || ""
+  });
+
+  req.locale = locale;
+  req.t = createTranslator(locale);
+  res.locals.locale = locale;
+  res.locals.t = req.t;
+
+  if (typeof req.query?.lang === "string" && normalizeLocale(req.query.lang) === req.query.lang) {
+    res.append(
+      "Set-Cookie",
+      `briefify_locale=${locale}; Path=/; Max-Age=${60 * 60 * 24 * 365}; SameSite=Lax`
+    );
+  }
+
+  next();
+});
+
 function isAdminConfigured() {
   return Boolean(config.adminUsername && config.adminPassword && config.adminSessionSecret);
 }
@@ -136,7 +160,9 @@ function ensureAdminAccess(req, res) {
     res.status(503).type("html").send(
       buildAdminLoginPage(publicConfig, {
         errorMessage:
-          "Адмінка ще не налаштована. Додайте ADMIN_USERNAME, ADMIN_PASSWORD і ADMIN_SESSION_SECRET."
+          "Адмінка ще не налаштована. Додайте ADMIN_USERNAME, ADMIN_PASSWORD і ADMIN_SESSION_SECRET.",
+        locale: res.locals.locale,
+        t: res.locals.t
       })
     );
     return false;
@@ -167,7 +193,9 @@ app.get("/ads.txt", (_req, res) => {
 });
 
 app.get("/", (_req, res) => {
-  res.type("html").send(buildHomePage(publicConfig, articles.slice(0, 6)));
+  res.type("html").send(
+    buildHomePage(publicConfig, articles.slice(0, 6), { locale: res.locals.locale, t: res.locals.t })
+  );
 });
 
 app.get("/index.html", (_req, res) => {
@@ -179,7 +207,13 @@ app.get("/index.htm", (_req, res) => {
 });
 
 app.get("/statti", (_req, res) => {
-  res.type("html").send(buildArticlesIndexPage(publicConfig, articles, categories));
+  res.type("html").send(
+    buildArticlesIndexPage(publicConfig, articles, categories, null, {
+      locale: res.locals.locale,
+      t: res.locals.t,
+      currentPath: "/statti"
+    })
+  );
 });
 
 app.get("/statti/kategoria/:categorySlug", (req, res) => {
@@ -190,17 +224,22 @@ app.get("/statti/kategoria/:categorySlug", (req, res) => {
       "404",
       "Категорію не знайдено",
       `
-        <h1>Категорію не знайдено</h1>
-        <p>Можливо, посилання змінилося або така категорія ще не створена.</p>
-        <p><a href="/statti">Повернутися до всіх статей</a></p>
+        <h1>404</h1>
+        <p>Category was not found.</p>
+        <p><a href="/statti">${res.locals.t("articlesAll")}</a></p>
       `,
-      publicConfig
+      publicConfig,
+      { locale: res.locals.locale, t: res.locals.t, currentPath: req.path }
     ));
   }
 
   const filteredArticles = getArticlesByCategory(category.slug);
   return res.type("html").send(
-    buildArticlesIndexPage(publicConfig, filteredArticles, categories, category)
+    buildArticlesIndexPage(publicConfig, filteredArticles, categories, category, {
+      locale: res.locals.locale,
+      t: res.locals.t,
+      currentPath: req.path
+    })
   );
 });
 
@@ -212,11 +251,12 @@ app.get("/statti/:slug", (req, res) => {
       "404",
       "Статтю не знайдено",
       `
-        <h1>Статтю не знайдено</h1>
-        <p>Можливо, посилання змінилося або сторінка ще не створена.</p>
-        <p><a href="/statti">Повернутися до всіх статей</a></p>
+        <h1>404</h1>
+        <p>Article was not found.</p>
+        <p><a href="/statti">${res.locals.t("articlesAll")}</a></p>
       `,
-      publicConfig
+      publicConfig,
+      { locale: res.locals.locale, t: res.locals.t, currentPath: req.path }
     ));
   }
 
@@ -224,7 +264,12 @@ app.get("/statti/:slug", (req, res) => {
     .filter((candidate) => candidate.slug !== article.slug)
     .slice(0, 3);
 
-  return res.type("html").send(buildArticlePage(article, relatedArticles, publicConfig));
+  return res.type("html").send(
+    buildArticlePage(article, relatedArticles, publicConfig, {
+      locale: res.locals.locale,
+      t: res.locals.t
+    })
+  );
 });
 
 app.get("/robots.txt", (_req, res) => {
@@ -261,7 +306,12 @@ ${urls
 app.get("/impressum", async (_req, res) => {
   try {
     const legalHtml = await getLegalContent("impressum", publicConfig);
-    res.type("html").send(buildLegalPage("impressum", "Impressum", legalHtml, publicConfig));
+    res.type("html").send(
+      buildLegalPage("impressum", "Impressum", legalHtml, publicConfig, {
+        locale: res.locals.locale,
+        t: res.locals.t
+      })
+    );
   } catch (error) {
     console.error("[briefify] impressum failed:", error.message);
     res.status(500).send("Impressum content is unavailable.");
@@ -272,7 +322,10 @@ app.get("/datenschutz", async (_req, res) => {
   try {
     const legalHtml = await getLegalContent("datenschutz", publicConfig);
     res.type("html").send(
-      buildLegalPage("datenschutz", "Datenschutzerklärung", legalHtml, publicConfig)
+      buildLegalPage("datenschutz", "Datenschutzerklärung", legalHtml, publicConfig, {
+        locale: res.locals.locale,
+        t: res.locals.t
+      })
     );
   } catch (error) {
     console.error("[briefify] datenschutz failed:", error.message);
@@ -282,11 +335,16 @@ app.get("/datenschutz", async (_req, res) => {
 
 app.get("/kontakt", (_req, res) => {
   const legalHtml = `
-    <h1>Kontakt</h1>
-    <p>Питання щодо сервісу, приватності або прав користувача можна надсилати на:</p>
+    <h1>${res.locals.t("legalContactTitle")}</h1>
+    <p>${res.locals.t("legalContactIntro")}</p>
     <p><a href="mailto:${publicConfig.contactEmail}">${publicConfig.contactEmail}</a></p>
   `;
-  res.type("html").send(buildLegalPage("kontakt", "Kontakt", legalHtml, publicConfig));
+  res.type("html").send(
+    buildLegalPage("kontakt", res.locals.t("legalContactTitle"), legalHtml, publicConfig, {
+      locale: res.locals.locale,
+      t: res.locals.t
+    })
+  );
 });
 
 app.get("/api/public-config", (_req, res) => {
@@ -302,7 +360,9 @@ app.get("/admin/login", (req, res) => {
     return res.status(503).type("html").send(
       buildAdminLoginPage(publicConfig, {
         errorMessage:
-          "Адмінка ще не налаштована. Додайте ADMIN_USERNAME, ADMIN_PASSWORD і ADMIN_SESSION_SECRET."
+          "Адмінка ще не налаштована. Додайте ADMIN_USERNAME, ADMIN_PASSWORD і ADMIN_SESSION_SECRET.",
+        locale: res.locals.locale,
+        t: res.locals.t
       })
     );
   }
@@ -314,7 +374,9 @@ app.get("/admin/login", (req, res) => {
 
   return res.type("html").send(
     buildAdminLoginPage(publicConfig, {
-      errorMessage: req.query.error === "invalid" ? "Неправильний логін або пароль." : ""
+      errorMessage: req.query.error === "invalid" ? "Неправильний логін або пароль." : "",
+      locale: res.locals.locale,
+      t: res.locals.t
     })
   );
 });
@@ -324,7 +386,9 @@ app.post("/admin/login", (req, res) => {
     return res.status(503).type("html").send(
       buildAdminLoginPage(publicConfig, {
         errorMessage:
-          "Адмінка ще не налаштована. Додайте ADMIN_USERNAME, ADMIN_PASSWORD і ADMIN_SESSION_SECRET."
+          "Адмінка ще не налаштована. Додайте ADMIN_USERNAME, ADMIN_PASSWORD і ADMIN_SESSION_SECRET.",
+        locale: res.locals.locale,
+        t: res.locals.t
       })
     );
   }
@@ -387,7 +451,9 @@ app.get("/admin", (req, res) => {
       },
       presets: buildAdminPresets(),
       errorMessage: parsedRange.ok ? "" : parsedRange.error,
-      timeZone: config.adminTimeZone
+      timeZone: config.adminTimeZone,
+      locale: res.locals.locale,
+      t: res.locals.t
     })
   );
 });
@@ -396,27 +462,27 @@ app.post("/api/analyze-letter", rateLimiter, upload.single("letter"), async (req
   try {
     if (!config.turnstileSecretKey) {
       return res.status(500).json({
-        error: "Turnstile не налаштований на сервері. Додайте TURNSTILE_SECRET_KEY."
+        error: req.t("apiTurnstileMissing")
       });
     }
 
     if (typeof req.body?.website === "string" && req.body.website.trim() !== "") {
       return res.status(400).json({
-        error: "Запит відхилено системою захисту від автоматичних відправлень."
+        error: req.t("apiBotRejected")
       });
     }
 
     const loadedAt = Number(req.body?.form_loaded_at || 0);
     if (!loadedAt || Date.now() - loadedAt < MIN_HUMAN_FILL_MS) {
       return res.status(400).json({
-        error: "Запит виглядає автоматичним. Спробуйте відправити форму ще раз."
+        error: req.t("apiBotWait")
       });
     }
 
     const turnstileToken = String(req.body?.cf_turnstile_response || "").trim();
     if (!turnstileToken) {
       return res.status(400).json({
-        error: "Підтвердіть, будь ласка, що ви не бот."
+        error: req.t("apiTurnstileConfirm")
       });
     }
 
@@ -428,27 +494,34 @@ app.post("/api/analyze-letter", rateLimiter, upload.single("letter"), async (req
 
     if (!turnstileResult.success) {
       return res.status(400).json({
-        error: "Перевірка Turnstile не пройдена. Спробуйте ще раз."
+        error: req.t("apiTurnstileFailed")
       });
     }
 
     if (!req.file) {
       return res.status(400).json({
-        error: "Будь ласка, завантажте файл у форматі JPG, PNG або PDF."
+        error: req.t("apiNeedFile")
       });
     }
 
     if (req.body?.consent !== "true") {
       return res.status(400).json({
-        error: "Щоб продовжити, потрібно підтвердити згоду на обробку документа."
+        error: req.t("apiNeedConsent")
       });
     }
 
-    const extraction = await extractDocumentPayload(req.file, config);
+    const extraction = await extractDocumentPayload(req.file, {
+      ...config,
+      uploadTypesMessage: req.t("apiUploadTypes"),
+      emptyFileMessage: req.t("apiEmptyFile")
+    });
     const analysis = await analyzeLetterWithOpenAI({
       file: req.file,
       extraction,
-      config
+      config: {
+        ...config,
+        outputLanguage: normalizeLocale(req.locale || "uk")
+      }
     });
 
     statsStore.recordTranslationEvent({
@@ -470,7 +543,7 @@ app.post("/api/analyze-letter", rateLimiter, upload.single("letter"), async (req
     const status = error.statusCode || error.status || 500;
     const message =
       error.publicMessage ||
-      "Сталася помилка під час аналізу листа. Спробуйте ще раз трохи пізніше.";
+      req.t("apiGenericError");
 
     if (status >= 500) {
       console.error("[briefify] analyze-letter failed:", error.message);
@@ -483,9 +556,9 @@ app.post("/api/analyze-letter", rateLimiter, upload.single("letter"), async (req
 app.use((error, _req, res, _next) => {
   if (error instanceof multer.MulterError && error.code === "LIMIT_FILE_SIZE") {
     return res.status(400).json({
-      error: `Файл завеликий. Максимальний розмір: ${Math.floor(
+      error: `Max file size: ${Math.floor(
         config.maxFileSizeBytes / (1024 * 1024)
-      )} МБ.`
+      )} MB.`
     });
   }
 

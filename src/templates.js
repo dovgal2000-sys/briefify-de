@@ -1,3 +1,5 @@
+import { getFrontendMessages, getLocaleOptions } from "./i18n.js";
+
 function buildSocialMeta({ title, description, imageUrl, canonicalUrl, type = "website" }) {
   return `
   <meta property="og:type" content="${type}" />
@@ -76,9 +78,31 @@ function renderAdSlot({ slotId, client, label, modifier = "" }) {
   `;
 }
 
-function layout({ title, description, body, publicConfig, extraHead = "" }) {
+function renderLocaleSwitcher(currentPath, locale, t) {
+  const links = getLocaleOptions()
+    .map((option) => {
+      const href = `${currentPath}${currentPath.includes("?") ? "&" : "?"}lang=${option.value}`;
+      const isActive = option.value === locale;
+      const flagClass = option.value === "de" ? "locale-flag-de" : "locale-flag-ua";
+      return `
+        <a class="locale-link locale-link-${option.value}${isActive ? " locale-link-active" : ""}" href="${href}" hreflang="${option.value}">
+          <span class="locale-flag ${flagClass}" aria-hidden="true"></span>
+          <span>${option.label}</span>
+        </a>
+      `;
+    })
+    .join("");
+
+  return `
+    <div class="locale-switcher" aria-label="${t("localeSwitchLabel")}">
+      ${links}
+    </div>
+  `;
+}
+
+function layout({ title, description, body, publicConfig, extraHead = "", locale = "uk", currentPath = "/", t }) {
   return `<!DOCTYPE html>
-<html lang="uk">
+<html lang="${t("htmlLang")}">
 <head>
   ${buildIubendaHeadStart(publicConfig)}
   <meta charset="UTF-8" />
@@ -101,6 +125,7 @@ function layout({ title, description, body, publicConfig, extraHead = "" }) {
 <body>
   <div
     id="site-config"
+    data-locale="${locale}"
     data-iubenda-enabled="${publicConfig.iubendaSiteId && publicConfig.iubendaCookiePolicyId ? "true" : "false"}"
     data-adsense-client="${publicConfig.adsenseClient || ""}"
     data-adsense-home-slot="${publicConfig.adsenseHomeSlot || ""}"
@@ -113,10 +138,11 @@ function layout({ title, description, body, publicConfig, extraHead = "" }) {
         <img class="brand-logo" src="/assets/logo.svg" alt="${publicConfig.appName}" />
       </a>
       <nav class="nav-links">
-        <a href="/#how-it-works">Як це працює</a>
-        <a href="/statti">Статті</a>
-        <a href="/#legal">Правова інформація</a>
+        <a href="/#how-it-works">${t("navHowItWorks")}</a>
+        <a href="/statti">${t("navArticles")}</a>
+        <a href="/#legal">${t("navLegal")}</a>
       </nav>
+      ${renderLocaleSwitcher(currentPath, locale, t)}
     </div>
   </header>
   ${body}
@@ -124,24 +150,24 @@ function layout({ title, description, body, publicConfig, extraHead = "" }) {
     <div class="container footer-grid">
       <div>
         <h3>${publicConfig.appName}</h3>
-        <p>Пояснює німецькі листи українською мовою та допомагає підготувати відповідь.</p>
+        <p>${t("footerDescription")}</p>
       </div>
       <div>
-        <h4>Правова інформація</h4>
-        <a href="/statti">Статті</a>
+        <h4>${t("footerLegal")}</h4>
+        <a href="/statti">${t("navArticles")}</a>
         <a href="/impressum">Impressum</a>
         <a href="/datenschutz">Datenschutzerklärung</a>
-        <a href="/kontakt">Kontakt</a>
+        <a href="/kontakt">${t("legalContactTitle")}</a>
         ${
           publicConfig.iubendaSiteId && publicConfig.iubendaCookiePolicyId
-            ? '<a href="#" class="iubenda-cs-preferences-link">Cookie-Einstellungen</a>'
+            ? `<a href="#" class="iubenda-cs-preferences-link">${t("footerCookieSettings")}</a>`
             : ""
         }
       </div>
       <div>
-        <h4>Контакти</h4>
+        <h4>${t("footerContacts")}</h4>
         <a href="mailto:${publicConfig.supportEmail}">${publicConfig.supportEmail}</a>
-        <p>${publicConfig.city}, ${publicConfig.country}</p>
+        <p>${publicConfig.city}, ${publicConfig.country}, ${new Date().getFullYear()}</p>
       </div>
     </div>
   </footer>
@@ -152,20 +178,18 @@ function layout({ title, description, body, publicConfig, extraHead = "" }) {
     <div class="cookie-banner-inner">
       <div class="cookie-copy">
         <p>
-          Ми використовуємо технічні cookies та локальне збереження даних для коректної роботи сайту.
-          Детальніше читайте у <a href="/datenschutz">Datenschutzerklärung</a>.
+          ${t("cookieText1").replace("Datenschutzerklärung", '<a href="/datenschutz">Datenschutzerklärung</a>')}
         </p>
         <p class="cookie-copy-secondary">
-          Якщо ви погодитесь на рекламу, ми також зможемо завантажити Google Ads.
+          ${t("cookieText2")}
         </p>
         <p class="cookie-copy-secondary">
-          Wir verwenden technische Cookies und lokale Speicherung, damit die Website korrekt funktioniert.
-          Weitere Informationen finden Sie in der <a href="/datenschutz">Datenschutzerklärung</a>.
+          ${t("cookieText3").replace("Datenschutzerklärung", '<a href="/datenschutz">Datenschutzerklärung</a>')}
         </p>
       </div>
       <div class="cookie-actions">
-        <button id="cookie-necessary" class="secondary-button" type="button">Лише необхідні</button>
-        <button id="cookie-accept" class="primary-button" type="button">Прийняти рекламу</button>
+        <button id="cookie-necessary" class="secondary-button" type="button">${t("cookieNecessary")}</button>
+        <button id="cookie-accept" class="primary-button" type="button">${t("cookieAccept")}</button>
       </div>
     </div>
   </div>`
@@ -216,14 +240,17 @@ function renderArticleCards(articles) {
     .join("");
 }
 
-export function buildHomePage(publicConfig, featuredArticles = []) {
-  const title = `${publicConfig.appName} - Пояснення німецьких листів українською`;
-  const description =
-    "Завантажте фото або PDF з листом німецькою мовою та отримайте зрозуміле пояснення українською.";
+export function buildHomePage(publicConfig, featuredArticles = [], { locale = "uk", t }) {
+  const title = `${publicConfig.appName} - ${t("homeTitle")}`;
+  const description = t("homeDescription");
+  const frontendMessages = JSON.stringify(getFrontendMessages(locale));
   return layout({
     title,
     description,
     publicConfig,
+    locale,
+    currentPath: "/",
+    t,
     extraHead: buildSocialMeta({
       title,
       description,
@@ -236,47 +263,45 @@ export function buildHomePage(publicConfig, featuredArticles = []) {
         <section class="hero">
           <div class="container hero-grid">
             <div class="hero-copy">
-              <span class="eyebrow">Сервіс для українців у Німеччині</span>
-              <h1>Завантажте лист на німецькій мові та отримайте пояснення українською</h1>
+              <span class="eyebrow">${t("homeEyebrow")}</span>
+              <h1>${t("homeTitle")}</h1>
               <p class="lead">
-                ${publicConfig.appName} допомагає зрозуміти зміст листа, знайти дедлайни, ризики та
-                підготувати чернетку відповіді німецькою мовою.
+                ${t("homeLead")}
               </p>
               <ul class="hero-points">
-                <li>Підтримка JPG, PNG і PDF</li>
-                <li>Пояснення простою українською</li>
-                <li>Чернетка відповіді німецькою для копіювання</li>
+                <li>${t("homePoint1")}</li>
+                <li>${t("homePoint2")}</li>
+                <li>${t("homePoint3")}</li>
               </ul>
             </div>
             <div class="upload-card">
               <form id="analyze-form" class="analyze-form">
                 <input id="form-loaded-at" name="form_loaded_at" type="hidden" value="" />
                 <div class="bot-trap" aria-hidden="true">
-                  <label for="website">Не заповнюйте це поле</label>
+                  <label for="website">${t("honeypotLabel")}</label>
                   <input id="website" name="website" type="text" tabindex="-1" autocomplete="off" />
                 </div>
                 <label class="upload-zone" for="letter">
                   <input id="letter" name="letter" type="file" accept=".jpg,.jpeg,.png,.pdf" />
-                  <span class="upload-button">Оберіть фото або PDF</span>
-                  <span class="upload-subtitle">Рекомендовано чітке фото без тіней або оригінальний PDF</span>
+                  <span class="upload-button">${t("uploadButton")}</span>
+                  <span class="upload-subtitle">${t("uploadSubtitle")}</span>
                 </label>
                 <div id="file-preview" class="file-preview hidden" aria-live="polite">
                   <div class="file-preview-head">
-                    <strong>Попередній перегляд</strong>
+                    <strong>${t("previewTitle")}</strong>
                     <span id="file-preview-name" class="file-preview-name"></span>
                   </div>
-                  <img id="image-preview" class="image-preview hidden" alt="Попередній перегляд зображення" />
+                  <img id="image-preview" class="image-preview hidden" alt="${t("imagePreviewAlt")}" />
                   <iframe
                     id="pdf-preview"
                     class="pdf-preview hidden"
-                    title="Попередній перегляд PDF"
+                    title="${t("pdfPreviewTitle")}"
                   ></iframe>
                 </div>
                 <label class="consent">
                   <input id="consent" name="consent" type="checkbox" />
                   <span>
-                    Я підтверджую, що погоджуюсь на обробку документа для AI-аналізу згідно з
-                    <a href="/datenschutz">Datenschutzerklärung</a>.
+                    ${t("consentLabel").replace("Datenschutzerklärung", '<a href="/datenschutz">Datenschutzerklärung</a>')}
                   </span>
                 </label>
                 ${
@@ -290,13 +315,12 @@ export function buildHomePage(publicConfig, featuredArticles = []) {
                 ></div>`
                     : `
                 <p class="fine-print">
-                  Turnstile ще не налаштований. Додайте ключ сайту в .env для активації захисту від ботів.
+                  ${t("turnstileMissing")}
                 </p>`
                 }
-                <button class="primary-button" type="submit">Пояснити лист</button>
+                <button class="primary-button" type="submit">${t("submitButton")}</button>
                 <p class="fine-print">
-                  Сервіс не є юридичною консультацією. Не завантажуйте документи, якщо у вас немає права
-                  передавати їх на обробку.
+                  ${t("formFinePrint")}
                 </p>
               </form>
               <div id="status-box" class="status-box" aria-live="polite"></div>
@@ -307,24 +331,24 @@ export function buildHomePage(publicConfig, featuredArticles = []) {
         <section class="section">
           <div class="container">
             <div class="section-head">
-              <span class="eyebrow" id="how-it-works">Як це працює</span>
-              <h2>Один сценарій, без зайвої складності</h2>
+              <span class="eyebrow" id="how-it-works">${t("howItWorksEyebrow")}</span>
+              <h2>${t("howItWorksTitle")}</h2>
             </div>
             <div class="steps">
               <article class="step-card">
                 <strong>1</strong>
-                <h3>Завантаження</h3>
-                <p>Користувач додає фото або PDF з листом німецькою мовою.</p>
+                <h3>${t("step1Title")}</h3>
+                <p>${t("step1Text")}</p>
               </article>
               <article class="step-card">
                 <strong>2</strong>
-                <h3>Розпізнавання</h3>
-                <p>Система витягує текст або читає сам документ, якщо це скан чи фото.</p>
+                <h3>${t("step2Title")}</h3>
+                <p>${t("step2Text")}</p>
               </article>
               <article class="step-card">
                 <strong>3</strong>
-                <h3>Пояснення</h3>
-                <p>AI формує короткий зміст, дії, дедлайни, ризики та чернетку відповіді.</p>
+                <h3>${t("step3Title")}</h3>
+                <p>${t("step3Text")}</p>
               </article>
             </div>
           </div>
@@ -333,39 +357,39 @@ export function buildHomePage(publicConfig, featuredArticles = []) {
         <section class="section section-accent">
           <div class="container">
             <div class="section-head">
-              <span class="eyebrow">Результат</span>
-              <h2>Структурований розбір листа</h2>
+              <span class="eyebrow">${t("resultEyebrow")}</span>
+              <h2>${t("resultTitle")}</h2>
             </div>
             <div id="result-card" class="result-card hidden">
               <div class="result-block">
-                <h3>Що це за лист</h3>
-                <p id="summary_uk"></p>
+                <h3>${t("resultSummary")}</h3>
+                <p id="summary"></p>
               </div>
               <div class="result-columns">
                 <div class="result-block">
-                  <h3>Що потрібно зробити</h3>
+                  <h3>${t("resultActions")}</h3>
                   <ul id="actions"></ul>
                 </div>
                 <div class="result-block">
-                  <h3>До якої дати</h3>
+                  <h3>${t("resultDeadlines")}</h3>
                   <ul id="deadlines"></ul>
                 </div>
               </div>
               <div class="result-block alert-block">
-                <h3>Можливі ризики</h3>
+                <h3>${t("resultRisks")}</h3>
                 <ul id="risks"></ul>
               </div>
               <div class="result-block">
                 <div class="result-title-row">
-                  <h3>Чернетка відповіді німецькою</h3>
+                  <h3>${t("resultReply")}</h3>
                   <div class="result-actions">
-                    <button id="copy-reply" class="secondary-button" type="button">Скопіювати</button>
-                    <button id="send-email" class="secondary-button" type="button">Відправити на email</button>
+                    <button id="copy-reply" class="secondary-button" type="button">${t("resultReplyCopy")}</button>
+                    <button id="send-email" class="secondary-button" type="button">${t("resultReplyEmail")}</button>
                   </div>
                 </div>
-                <pre id="reply_de" class="reply-box"></pre>
+                <pre id="reply_text" class="reply-box"></pre>
                 <div class="email-compose">
-                  <label class="email-label" for="reply-email">Email одержувача</label>
+                  <label class="email-label" for="reply-email">${t("emailRecipient")}</label>
                   <input
                     id="reply-email"
                     class="email-input"
@@ -375,16 +399,16 @@ export function buildHomePage(publicConfig, featuredArticles = []) {
                     placeholder="example@email.de"
                   />
                   <p class="fine-print">
-                    Кнопка відкриє ваш поштовий клієнт з підставленою темою та чернеткою відповіді.
+                    ${t("emailFinePrint")}
                   </p>
                 </div>
               </div>
               <div class="result-block">
-                <h3>Що означає ця відповідь</h3>
-                <p id="reply_uk_explanation"></p>
+                <h3>${t("resultReplyMeaning")}</h3>
+                <p id="reply_explanation"></p>
               </div>
               <div class="result-block disclaimer-block">
-                <h3>Важливо</h3>
+                <h3>${t("resultImportant")}</h3>
                 <p id="disclaimer"></p>
               </div>
             </div>
@@ -401,34 +425,39 @@ export function buildHomePage(publicConfig, featuredArticles = []) {
         <section class="section">
           <div class="container">
             <div class="section-head">
-              <span class="eyebrow">SEO-статті</span>
-              <h2>Корисні пояснення про німецькі листи та формуляри</h2>
+              <span class="eyebrow">${t("seoEyebrow")}</span>
+              <h2>${t("seoTitle")}</h2>
               <p class="lead">
-                Ми зібрали прості статті українською про Jobcenter, Auslaenderbehoerde, Krankenkasse,
-                Schule та інші часті листи, які приходять у Німеччині.
+                ${t("seoLead")}
               </p>
             </div>
             <div class="article-grid">
               ${renderArticleCards(featuredArticles)}
             </div>
             <div class="section-cta">
-              <a class="secondary-button" href="/statti">Переглянути всі статті</a>
+              <a class="secondary-button" href="/statti">${t("seoButton")}</a>
             </div>
           </div>
         </section>
       </main>
+      <script>
+        window.__BRIEFIFY_I18N = ${frontendMessages};
+      </script>
       <script src="/assets/app.js" defer></script>
     `
   });
 }
 
-export function buildLegalPage(titleKey, title, legalHtml, publicConfig) {
+export function buildLegalPage(titleKey, title, legalHtml, publicConfig, { locale = "uk", t, currentPath = `/${titleKey}` } = {}) {
   const pageTitle = `${title} - ${publicConfig.appName}`;
   const description = `${titleKey} for ${publicConfig.appName}`;
   return layout({
     title: pageTitle,
     description,
     publicConfig,
+    locale,
+    currentPath,
+    t,
     extraHead: buildSocialMeta({
       title: pageTitle,
       description,
@@ -446,7 +475,7 @@ export function buildLegalPage(titleKey, title, legalHtml, publicConfig) {
   });
 }
 
-function renderCategoryFilters(categories, activeCategorySlug = "") {
+function renderCategoryFilters(categories, activeCategorySlug = "", t) {
   const allChipClass = activeCategorySlug ? "category-filter" : "category-filter category-filter-active";
   const allHref = "/statti";
   const categoryLinks = categories
@@ -458,19 +487,18 @@ function renderCategoryFilters(categories, activeCategorySlug = "") {
 
   return `
     <div class="category-filters">
-      <a class="${allChipClass}" href="${allHref}">Усі статті</a>
+      <a class="${allChipClass}" href="${allHref}">${t("articlesAll")}</a>
       ${categoryLinks}
     </div>
   `;
 }
 
-export function buildArticlesIndexPage(publicConfig, articles, categories, activeCategory = null) {
+export function buildArticlesIndexPage(publicConfig, articles, categories, activeCategory = null, { locale = "uk", t, currentPath = "/statti" } = {}) {
   const titlePrefix = activeCategory
-    ? `Статті категорії ${activeCategory.title}`
-    : "Статті про німецькі листи";
+    ? `${t("articlesTitle")}: ${activeCategory.title}`
+    : t("articlesTitle");
   const title = `${titlePrefix} - ${publicConfig.appName}`;
-  const description =
-    "Добірка статей українською про німецькі офіційні листи, Jobcenter, Krankenkasse, Auslaenderbehoerde та шкільні повідомлення.";
+  const description = t("articlesDescription");
   const canonicalUrl = activeCategory
     ? `${publicConfig.siteOrigin}/statti/kategoria/${activeCategory.slug}`
     : `${publicConfig.siteOrigin}/statti`;
@@ -478,6 +506,9 @@ export function buildArticlesIndexPage(publicConfig, articles, categories, activ
     title,
     description,
     publicConfig,
+    locale,
+    currentPath,
+    t,
     extraHead: buildSocialMeta({
       title,
       description,
@@ -489,14 +520,13 @@ export function buildArticlesIndexPage(publicConfig, articles, categories, activ
       <main class="section">
         <div class="container">
           <div class="section-head section-head-left">
-            <span class="eyebrow">База знань</span>
-            <h1>${activeCategory ? `Категорія: ${activeCategory.title}` : "Статті про німецькі офіційні листи"}</h1>
+            <span class="eyebrow">${t("articlesEyebrow")}</span>
+            <h1>${activeCategory ? `${t("articleCategory")}: ${activeCategory.title}` : t("articlesTitle")}</h1>
             <p class="lead">
-              Тут зібрані прості пояснення українською мовою для типових листів з Німеччини:
-              Jobcenter, Schule, Krankenkasse, Auslaenderbehoerde, Kündigung і формуляри.
+              ${t("articlesLead")}
             </p>
           </div>
-          ${renderCategoryFilters(categories, activeCategory?.slug || "")}
+          ${renderCategoryFilters(categories, activeCategory?.slug || "", t)}
           <div class="article-grid article-grid-full">
             ${renderArticleCards(articles)}
           </div>
@@ -506,14 +536,14 @@ export function buildArticlesIndexPage(publicConfig, articles, categories, activ
   });
 }
 
-export function buildArticlePage(article, relatedArticles, publicConfig) {
+export function buildArticlePage(article, relatedArticles, publicConfig, { locale = "uk", t }) {
   const keywords = article.keywords?.join(", ") || "";
   const title = `${article.title} - ${publicConfig.appName}`;
   const canonicalUrl = `${publicConfig.siteOrigin}/statti/${article.slug}`;
   const relatedHtml = relatedArticles.length
     ? `
       <section class="article-related">
-        <h2>Ще корисні статті</h2>
+        <h2>${t("articleRelated")}</h2>
         <div class="article-grid">
           ${renderArticleCards(relatedArticles)}
         </div>
@@ -525,6 +555,9 @@ export function buildArticlePage(article, relatedArticles, publicConfig) {
     title,
     description: article.description,
     publicConfig,
+    locale,
+    currentPath: `/statti/${article.slug}`,
+    t,
     extraHead: `
       ${keywords ? `<meta name="keywords" content="${keywords}" />` : ""}
       ${buildSocialMeta({
@@ -539,15 +572,15 @@ export function buildArticlePage(article, relatedArticles, publicConfig) {
       <main class="section">
         <article class="container article-shell">
           <nav class="breadcrumbs" aria-label="breadcrumb">
-            <a href="/">Головна</a>
+            <a href="/">${t("homeBreadcrumb")}</a>
             <span>/</span>
-            <a href="/statti">Статті</a>
+            <a href="/statti">${t("navArticles")}</a>
             <span>/</span>
             <span>${article.title}</span>
           </nav>
 
           <header class="article-hero">
-            <span class="eyebrow">SEO-стаття</span>
+            <span class="eyebrow">${t("articleSeoEyebrow")}</span>
             <div class="article-cover article-cover-hero ${article.coverTone}">
               <span class="article-cover-kicker">${article.category.title}</span>
               <strong>${article.coverTitle}</strong>
@@ -556,9 +589,9 @@ export function buildArticlePage(article, relatedArticles, publicConfig) {
             <h1>${article.title}</h1>
             <p class="lead">${article.description}</p>
             <div class="article-meta">
-              <span>Дата: ${formatArticleDate(article.publishedAt)}</span>
-              <span>Час читання: ${article.readingTime}</span>
-              <span>Категорія: <a href="/statti/kategoria/${article.category.slug}">${article.category.title}</a></span>
+              <span>${t("articleDate")}: ${formatArticleDate(article.publishedAt)}</span>
+              <span>${t("articleReadingTime")}: ${article.readingTime}</span>
+              <span>${t("articleCategory")}: <a href="/statti/kategoria/${article.category.slug}">${article.category.title}</a></span>
             </div>
           </header>
 
@@ -574,12 +607,9 @@ export function buildArticlePage(article, relatedArticles, publicConfig) {
           })}
 
           <section class="article-cta-box">
-            <h2>Потрібно розібрати реальний лист?</h2>
-            <p>
-              Завантажте фото або PDF у ${publicConfig.appName} і отримайте коротке пояснення
-              українською, дедлайни, ризики та чернетку відповіді німецькою.
-            </p>
-            <a class="primary-button" href="/">Пояснити лист</a>
+            <h2>${t("articleCtaTitle")}</h2>
+            <p>${t("articleCtaText")}</p>
+            <a class="primary-button" href="/">${t("articleCtaButton")}</a>
           </section>
 
           ${relatedHtml}
@@ -589,7 +619,7 @@ export function buildArticlePage(article, relatedArticles, publicConfig) {
   });
 }
 
-export function buildAdminLoginPage(publicConfig, { errorMessage = "" } = {}) {
+export function buildAdminLoginPage(publicConfig, { errorMessage = "", locale = "uk", t } = {}) {
   const title = `Адмінка - вхід - ${publicConfig.appName}`;
   const description = "Вхід до внутрішньої статистики Briefify.";
 
@@ -597,6 +627,9 @@ export function buildAdminLoginPage(publicConfig, { errorMessage = "" } = {}) {
     title,
     description,
     publicConfig,
+    locale,
+    currentPath: "/admin/login",
+    t,
     body: `
       <main class="section">
         <div class="container admin-shell">
@@ -635,7 +668,9 @@ export function buildAdminDashboardPage(
     reportRange,
     presets,
     errorMessage = "",
-    timeZone
+    timeZone,
+    locale = "uk",
+    t
   }
 ) {
   const title = `Адмінка - статистика - ${publicConfig.appName}`;
@@ -645,6 +680,9 @@ export function buildAdminDashboardPage(
     title,
     description,
     publicConfig,
+    locale,
+    currentPath: "/admin",
+    t,
     body: `
       <main class="section">
         <div class="container admin-shell">

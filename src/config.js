@@ -1,17 +1,17 @@
 import path from "node:path";
 
 const DEFAULT_ANALYSIS_PROMPT = `
-Ти допомагаєш українськомовному користувачу зрозуміти офіційний або побутовий лист німецькою мовою.
-Проаналізуй документ уважно та поверни JSON за схемою.
-Пояснюй простою українською мовою без юридичного жаргону.
-Обов'язково:
-- коротко опиши, що це за лист;
-- виділи ключові дії;
-- знайди дедлайни, суми, ризики, наслідки бездіяльності;
-- якщо доречно, згенеруй ввічливу чернетку відповіді німецькою;
-- додай коротке українське пояснення цієї відповіді;
-- якщо щось нечітко прочитано, прямо скажи про це в disclaimer.
-Це не юридична консультація.
+You help people understand official and everyday letters or other documents written in different languages.
+Analyze the uploaded document carefully and return JSON that matches the schema exactly.
+Use plain language without legal jargon.
+Always:
+- briefly explain what kind of document this is;
+- list the key actions the user should take;
+- identify deadlines, amounts, risks, and consequences of doing nothing when present;
+- generate a polite reply draft when appropriate;
+- explain the meaning of that reply draft in the requested explanation language;
+- mention uncertainty explicitly in disclaimer if any part of the document is unclear.
+This is not legal advice.
 `.trim();
 
 export function getServerConfig() {

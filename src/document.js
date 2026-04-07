@@ -8,16 +8,19 @@ function createHttpError(statusCode, publicMessage, message = publicMessage) {
 }
 
 export async function extractDocumentPayload(file, config) {
+  const uploadTypesMessage = config.uploadTypesMessage || "Підтримуються лише файли JPG, PNG або PDF.";
+  const emptyFileMessage = config.emptyFileMessage || "Файл порожній або пошкоджений.";
+
   if (!config.allowedMimeTypes.includes(file.mimetype)) {
     throw createHttpError(
       400,
-      "Підтримуються лише файли JPG, PNG або PDF.",
+      uploadTypesMessage,
       `Unsupported mime type: ${file.mimetype}`
     );
   }
 
   if (!file.buffer || !file.buffer.length) {
-    throw createHttpError(400, "Файл порожній або пошкоджений.");
+    throw createHttpError(400, emptyFileMessage);
   }
 
   if (file.mimetype === "application/pdf") {

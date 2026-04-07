@@ -5,22 +5,24 @@ const RESPONSE_SCHEMA = {
     type: "object",
     additionalProperties: false,
     properties: {
-      summary_uk: { type: "string" },
+      summary: { type: "string" },
       actions: { type: "array", items: { type: "string" } },
       deadlines: { type: "array", items: { type: "string" } },
       risks: { type: "array", items: { type: "string" } },
-      reply_de: { type: "string" },
-      reply_uk_explanation: { type: "string" },
-      disclaimer: { type: "string" }
+      reply_text: { type: "string" },
+      reply_explanation: { type: "string" },
+      disclaimer: { type: "string" },
+      detected_document_language: { type: "string" }
     },
     required: [
-      "summary_uk",
+      "summary",
       "actions",
       "deadlines",
       "risks",
-      "reply_de",
-      "reply_uk_explanation",
-      "disclaimer"
+      "reply_text",
+      "reply_explanation",
+      "disclaimer",
+      "detected_document_language"
     ]
   }
 };
@@ -32,13 +34,29 @@ function createHttpError(statusCode, publicMessage, message = publicMessage) {
   return error;
 }
 
-function buildUserInstruction(extraction) {
+function getExplanationLanguageName(outputLanguage) {
+  return outputLanguage === "de" ? "German" : "Ukrainian";
+}
+
+function buildDynamicInstructions(outputLanguage) {
+  const explanationLanguage = getExplanationLanguageName(outputLanguage);
+
+  return `
+Explain the uploaded document in ${explanationLanguage}.
+Always return the explanation fields (summary, actions, deadlines, risks, reply_explanation, disclaimer) in ${explanationLanguage}.
+Write reply_text in the original language of the uploaded document whenever that is reasonably clear from the document.
+Set detected_document_language to the language name you identified for the uploaded document.
+If the document language is unclear, state that uncertainty in disclaimer and still provide the most likely language in detected_document_language.
+`.trim();
+}
+
+function buildUserInstruction(extraction, outputLanguage) {
   const extractionNote =
     extraction.mode === "pdf_text"
-      ? "Нижче вже є витягнутий текст з PDF. Використай його як головне джерело, але при потребі звіряй з файлом."
+      ? "Below is extracted text from the PDF. Use it as the primary source, but compare it with the file if needed."
       : extraction.mode === "pdf_fallback_ocr"
-        ? "PDF схожий на скан або текст витягнувся неповно. Проаналізуй сам файл і поясни його українською."
-        : "Користувач завантажив зображення листа. Спочатку прочитай документ, потім поясни його українською.";
+        ? `The PDF looks like a scan or the extracted text is incomplete. Analyze the file itself and explain it in ${getExplanationLanguageName(outputLanguage)}.`
+        : `The user uploaded an image of a document. Read the document first, then explain it in ${getExplanationLanguageName(outputLanguage)}.`;
 
   const content = [
     {
@@ -84,6 +102,7 @@ export async function analyzeLetterWithOpenAI({ extraction, config }) {
     );
   }
 
+  const outputLanguage = config.outputLanguage === "de" ? "de" : "uk";
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
@@ -92,8 +111,8 @@ export async function analyzeLetterWithOpenAI({ extraction, config }) {
     },
     body: JSON.stringify({
       model: config.openAiModel,
-      instructions: config.analysisPrompt,
-      input: [buildUserInstruction(extraction)],
+      instructions: `${config.analysisPrompt}\n\n${buildDynamicInstructions(outputLanguage)}`,
+      input: [buildUserInstruction(extraction, outputLanguage)],
       max_output_tokens: 900,
       text: {
         format: {

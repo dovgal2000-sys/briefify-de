@@ -20,6 +20,7 @@ const COOKIE_BANNER_KEY = "briefify_cookie_notice_closed";
 const COOKIE_PREFERENCES_KEY = "briefify_cookie_preferences";
 const MIN_HUMAN_FILL_MS = 1800;
 const iubendaEnabled = siteConfig?.dataset.iubendaEnabled === "true";
+const localeMessages = window.__BRIEFIFY_I18N || {};
 
 function resetPreview() {
   if (previewObjectUrl) {
@@ -92,14 +93,14 @@ function renderList(id, items, emptyText) {
 }
 
 function renderResult(data) {
-  document.getElementById("summary_uk").textContent = data.summary_uk;
-  document.getElementById("reply_de").textContent = data.reply_de;
-  document.getElementById("reply_uk_explanation").textContent = data.reply_uk_explanation;
+  document.getElementById("summary").textContent = data.summary;
+  document.getElementById("reply_text").textContent = data.reply_text;
+  document.getElementById("reply_explanation").textContent = data.reply_explanation;
   document.getElementById("disclaimer").textContent = data.disclaimer;
 
-  renderList("actions", data.actions, "Дій не виявлено.");
-  renderList("deadlines", data.deadlines, "Явних дедлайнів не знайдено.");
-  renderList("risks", data.risks, "Явних ризиків не виявлено.");
+  renderList("actions", data.actions, localeMessages.emptyActions || "No actions detected.");
+  renderList("deadlines", data.deadlines, localeMessages.emptyDeadlines || "No deadlines found.");
+  renderList("risks", data.risks, localeMessages.emptyRisks || "No risks detected.");
 
   resultCard.classList.remove("hidden");
   resultCard.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -123,17 +124,17 @@ form?.addEventListener("submit", async (event) => {
   const elapsed = Date.now() - loadedAt;
 
   if (!file) {
-    setStatus("Спочатку оберіть файл для аналізу.", "error");
+    setStatus(localeMessages.selectFile || "Please choose a file.", "error");
     return;
   }
 
   if (!consentInput?.checked) {
-    setStatus("Потрібно підтвердити згоду на обробку документа.", "error");
+    setStatus(localeMessages.consentRequired || "Consent is required.", "error");
     return;
   }
 
   if (!loadedAt || elapsed < MIN_HUMAN_FILL_MS) {
-    setStatus("Будь ласка, зачекайте секунду й повторіть відправку форми.", "error");
+    setStatus(localeMessages.wait || "Please wait a moment and try again.", "error");
     return;
   }
 
@@ -148,10 +149,10 @@ form?.addEventListener("submit", async (event) => {
   );
 
   resultCard.classList.add("hidden");
-  setStatus("Завантаження документа...", "loading");
+  setStatus(localeMessages.uploading || "Uploading...", "loading");
 
   try {
-    setStatus("Розпізнавання документа та аналіз змісту...", "loading");
+    setStatus(localeMessages.analyzing || "Analyzing...", "loading");
 
     const response = await fetch("/api/analyze-letter", {
       method: "POST",
@@ -164,40 +165,40 @@ form?.addEventListener("submit", async (event) => {
     }
 
     renderResult(payload);
-    setStatus("Аналіз готовий. Перевірте короткий зміст, дедлайни та чернетку відповіді.", "success");
+    setStatus(localeMessages.ready || "Analysis is ready.", "success");
   } catch (error) {
     setStatus(error.message || "Сталася помилка. Спробуйте ще раз.", "error");
   }
 });
 
 copyButton?.addEventListener("click", async () => {
-  const text = document.getElementById("reply_de").textContent;
+  const text = document.getElementById("reply_text").textContent;
   if (!text) return;
 
   try {
     await navigator.clipboard.writeText(text);
-    setStatus("Чернетку відповіді скопійовано у буфер обміну.", "success");
+    setStatus(localeMessages.copySuccess || "Copied.", "success");
   } catch (_error) {
-    setStatus("Не вдалося скопіювати текст автоматично. Скопіюйте його вручну.", "error");
+    setStatus(localeMessages.copyError || "Copy failed.", "error");
   }
 });
 
 sendEmailButton?.addEventListener("click", () => {
-  const replyText = document.getElementById("reply_de").textContent.trim();
+  const replyText = document.getElementById("reply_text").textContent.trim();
   const recipient = (replyEmailInput?.value || "").trim();
 
   if (!replyText) {
-    setStatus("Спочатку отримайте чернетку відповіді.", "error");
+    setStatus(localeMessages.needReply || "Reply text is missing.", "error");
     return;
   }
 
   if (!recipient) {
-    setStatus("Вкажіть email одержувача.", "error");
+    setStatus(localeMessages.needRecipient || "Recipient email is required.", "error");
     replyEmailInput?.focus();
     return;
   }
 
-  const subject = encodeURIComponent("Antwort auf Ihr Schreiben");
+  const subject = encodeURIComponent(localeMessages.emailSubject || "Antwort auf Ihr Schreiben");
   const body = encodeURIComponent(replyText);
   window.location.href = `mailto:${encodeURIComponent(recipient)}?subject=${subject}&body=${body}`;
 });
