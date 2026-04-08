@@ -1,5 +1,18 @@
 import { getFrontendMessages, getLocaleOptions } from "./i18n.js";
 
+function escapeHtml(value = "") {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function formatUserText(value = "") {
+  return escapeHtml(value).replaceAll("\n", "<br />");
+}
+
 function buildSocialMeta({ title, description, imageUrl, canonicalUrl, type = "website" }) {
   return `
   <meta property="og:type" content="${type}" />
@@ -219,6 +232,76 @@ function formatAdminDateTime(dateTime, timeZone) {
   }).format(new Date(dateTime));
 }
 
+function formatFeedbackDate(isoDate, locale = "uk") {
+  const dateLocale = locale === "de" ? "de-DE" : "uk-UA";
+  return new Intl.DateTimeFormat(dateLocale, {
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  }).format(new Date(isoDate));
+}
+
+function renderApprovedFeedback(feedbackEntries, { locale = "uk", t }) {
+  if (!feedbackEntries.length) {
+    return `<p class="lead feedback-empty">${t("feedbackEmpty")}</p>`;
+  }
+
+  return feedbackEntries
+    .map(
+      (entry) => `
+        <article class="feedback-card">
+          <div class="feedback-card-head">
+            <strong>${escapeHtml(entry.author_name)}</strong>
+            <span>${formatFeedbackDate(entry.created_at, locale)}</span>
+          </div>
+          <p>${formatUserText(entry.message)}</p>
+        </article>
+      `
+    )
+    .join("");
+}
+
+function renderFeedbackCarousel(feedbackEntries, { locale = "uk", t }) {
+  if (!feedbackEntries.length) {
+    return `<p class="lead feedback-empty">${t("feedbackEmpty")}</p>`;
+  }
+
+  return `
+    <div class="feedback-carousel-shell">
+      <div class="feedback-carousel-controls">
+        <button class="secondary-button feedback-carousel-button" type="button" data-feedback-carousel="prev" aria-label="${t("feedbackCarouselPrev")}">←</button>
+        <button class="secondary-button feedback-carousel-button" type="button" data-feedback-carousel="next" aria-label="${t("feedbackCarouselNext")}">→</button>
+      </div>
+      <div class="feedback-carousel" data-feedback-carousel-track>
+        ${feedbackEntries
+          .map(
+            (entry) => `
+              <article class="feedback-card feedback-card-carousel">
+                <div class="feedback-card-head">
+                  <strong>${escapeHtml(entry.author_name)}</strong>
+                  <span>${formatFeedbackDate(entry.created_at, locale)}</span>
+                </div>
+                <p>${formatUserText(entry.message)}</p>
+              </article>
+            `
+          )
+          .join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderFeedbackStatus(status, t) {
+  switch (status) {
+    case "approved":
+      return t("feedbackStatusApproved");
+    case "rejected":
+      return t("feedbackStatusRejected");
+    default:
+      return t("feedbackStatusPending");
+  }
+}
+
 function renderArticleCards(articles, { locale = "uk", t }) {
   return articles
     .map(
@@ -242,7 +325,7 @@ function renderArticleCards(articles, { locale = "uk", t }) {
     .join("");
 }
 
-export function buildHomePage(publicConfig, featuredArticles = [], { locale = "uk", t }) {
+export function buildHomePage(publicConfig, featuredArticles = [], feedbackEntries = [], { locale = "uk", t }) {
   const title = `${publicConfig.appName} - ${t("homeTitle")}`;
   const description = t("homeDescription");
   const frontendMessages = JSON.stringify(getFrontendMessages(locale));
@@ -442,6 +525,121 @@ export function buildHomePage(publicConfig, featuredArticles = [], { locale = "u
             </div>
           </div>
         </section>
+
+        <section class="section">
+          <div class="container">
+            <div class="section-head">
+              <span class="eyebrow">${t("feedbackEyebrow")}</span>
+              <h2>${t("feedbackTitle")}</h2>
+              <p class="lead">${t("feedbackLead")}</p>
+            </div>
+            ${renderFeedbackCarousel(feedbackEntries, { locale, t })}
+            <div class="section-cta feedback-cta">
+              <a class="primary-button" href="/feedback">${t("feedbackOpenForm")}</a>
+            </div>
+          </div>
+        </section>
+      </main>
+      <script>
+        window.__BRIEFIFY_I18N = ${frontendMessages};
+      </script>
+      <script src="/assets/app.js" defer></script>
+    `
+  });
+}
+
+export function buildFeedbackPage(publicConfig, feedbackEntries = [], { locale = "uk", t, hasFeedbackAccess = false }) {
+  const title = `${t("feedbackPageTitle")} - ${publicConfig.appName}`;
+  const description = t("feedbackPageDescription");
+  const frontendMessages = JSON.stringify(getFrontendMessages(locale));
+
+  return layout({
+    title,
+    description,
+    publicConfig,
+    locale,
+    currentPath: "/feedback",
+    t,
+    extraHead: buildSocialMeta({
+      title,
+      description,
+      imageUrl: `${publicConfig.siteOrigin}/assets/og-image.png`,
+      canonicalUrl: `${publicConfig.siteOrigin}/feedback`,
+      type: "website"
+    }),
+    body: `
+      <main class="section">
+        <div class="container feedback-page-layout">
+          <section class="feedback-form-card feedback-page-form">
+            <span class="eyebrow">${t("feedbackEyebrow")}</span>
+            <h1>${t("feedbackFormTitle")}</h1>
+            ${
+              hasFeedbackAccess
+                ? `
+            <p class="lead">${t("feedbackFormLead")}</p>
+            <form id="feedback-form" class="feedback-form">
+              <input id="feedback-loaded-at" name="form_loaded_at" type="hidden" value="" />
+              <div class="bot-trap" aria-hidden="true">
+                <label for="feedback-website">${t("honeypotLabel")}</label>
+                <input id="feedback-website" name="website" type="text" tabindex="-1" autocomplete="off" />
+              </div>
+              <label class="admin-field">
+                <span>${t("feedbackNameLabel")}</span>
+                <input
+                  id="feedback-name"
+                  name="author_name"
+                  type="text"
+                  maxlength="80"
+                  placeholder="${t("feedbackNamePlaceholder")}"
+                  required
+                />
+              </label>
+              <label class="admin-field">
+                <span>${t("feedbackMessageLabel")}</span>
+                <textarea
+                  id="feedback-message"
+                  name="message"
+                  rows="6"
+                  maxlength="1200"
+                  placeholder="${t("feedbackMessagePlaceholder")}"
+                  required
+                ></textarea>
+              </label>
+              ${
+                publicConfig.turnstileSiteKey
+                  ? `
+              <div
+                class="cf-turnstile"
+                data-sitekey="${publicConfig.turnstileSiteKey}"
+                data-theme="light"
+                data-language="${locale}"
+              ></div>`
+                  : `
+              <p class="fine-print">
+                ${t("turnstileMissing")}
+              </p>`
+              }
+              <button class="primary-button" type="submit">${t("feedbackSubmit")}</button>
+              <p class="fine-print">${t("feedbackFinePrint")}</p>
+            </form>`
+                : `
+            <div class="feedback-locked-card">
+              <h2>${t("feedbackLockedTitle")}</h2>
+              <p>${t("feedbackLockedLead")}</p>
+              <a class="primary-button" href="/">${t("feedbackLockedCta")}</a>
+            </div>`
+            }
+            <div id="feedback-status-box" class="status-box hidden" aria-live="polite"></div>
+          </section>
+          <section class="feedback-page-list">
+            <div class="section-head section-head-left">
+              <h2>${t("feedbackTitle")}</h2>
+            </div>
+            <div class="feedback-list">
+              ${renderApprovedFeedback(feedbackEntries, { locale, t })}
+            </div>
+          </section>
+        </div>
       </main>
       <script>
         window.__BRIEFIFY_I18N = ${frontendMessages};
@@ -670,6 +868,7 @@ export function buildAdminDashboardPage(
     quickStats,
     report,
     reportRange,
+    feedbackModeration,
     presets,
     errorMessage = "",
     timeZone,
@@ -795,6 +994,70 @@ export function buildAdminDashboardPage(
                       </table>
                     `
                     : `<p class="fine-print">За цей період ще немає успішних перекладів.</p>`
+                }
+              </div>
+            </section>
+
+            <section class="admin-report-card">
+              <div class="admin-report-head">
+                <h2>${t("feedbackAdminTitle")}</h2>
+              </div>
+
+              <div class="admin-summary-grid admin-summary-grid-feedback">
+                <article class="admin-summary-card">
+                  <span>${t("feedbackAdminPending")}</span>
+                  <strong>${feedbackModeration.counts.pending || 0}</strong>
+                </article>
+                <article class="admin-summary-card">
+                  <span>${t("feedbackAdminApproved")}</span>
+                  <strong>${feedbackModeration.counts.approved || 0}</strong>
+                </article>
+                <article class="admin-summary-card">
+                  <span>${t("feedbackAdminRejected")}</span>
+                  <strong>${feedbackModeration.counts.rejected || 0}</strong>
+                </article>
+              </div>
+
+              <div class="admin-feedback-list">
+                ${
+                  feedbackModeration.entries.length
+                    ? feedbackModeration.entries
+                        .map(
+                          (entry) => `
+                            <article class="admin-feedback-card">
+                              <div class="admin-feedback-head">
+                                <div>
+                                  <strong>${escapeHtml(entry.author_name)}</strong>
+                                  <span>${formatAdminDateTime(entry.created_at, timeZone)}</span>
+                                </div>
+                                <span class="admin-feedback-status admin-feedback-status-${entry.status}">
+                                  ${renderFeedbackStatus(entry.status, t)}
+                                </span>
+                              </div>
+                              <p>${formatUserText(entry.message)}</p>
+                              <div class="admin-feedback-meta">
+                                <span>Locale: ${entry.locale}</span>
+                                ${
+                                  entry.reviewed_at
+                                    ? `<span>Reviewed: ${formatAdminDateTime(entry.reviewed_at, timeZone)}</span>`
+                                    : ""
+                                }
+                              </div>
+                              <div class="admin-feedback-actions">
+                                <form method="post" action="/admin/feedback/${entry.id}/status">
+                                  <input type="hidden" name="status" value="approved" />
+                                  <button class="secondary-button" type="submit">${t("feedbackAdminApprove")}</button>
+                                </form>
+                                <form method="post" action="/admin/feedback/${entry.id}/status">
+                                  <input type="hidden" name="status" value="rejected" />
+                                  <button class="secondary-button" type="submit">${t("feedbackAdminReject")}</button>
+                                </form>
+                              </div>
+                            </article>
+                          `
+                        )
+                        .join("")
+                    : `<p class="fine-print">${t("feedbackAdminEmpty")}</p>`
                 }
               </div>
             </section>

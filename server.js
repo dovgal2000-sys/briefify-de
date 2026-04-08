@@ -15,9 +15,12 @@ import {
 import {
   buildAdminCookie,
   buildAdminLogoutCookie,
+  buildFeedbackAccessCookie,
   createAdminSession,
+  createFeedbackAccessToken,
   parseCookies,
-  verifyAdminSession
+  verifyAdminSession,
+  verifyFeedbackAccessToken
 } from "./src/admin-auth.js";
 import { getPublicConfig, getServerConfig } from "./src/config.js";
 import { extractDocumentPayload } from "./src/document.js";
@@ -31,6 +34,7 @@ import {
   buildAdminLoginPage,
   buildArticlePage,
   buildArticlesIndexPage,
+  buildFeedbackPage,
   buildHomePage,
   buildLegalPage
 } from "./src/templates.js";
@@ -192,8 +196,12 @@ app.get("/ads.txt", (_req, res) => {
 
 app.get("/", (_req, res) => {
   const articles = getAllArticles(res.locals.locale);
+  const approvedFeedback = statsStore.getApprovedFeedback(6);
   res.type("html").send(
-    buildHomePage(publicConfig, articles.slice(0, 6), { locale: res.locals.locale, t: res.locals.t })
+    buildHomePage(publicConfig, articles.slice(0, 6), approvedFeedback, {
+      locale: res.locals.locale,
+      t: res.locals.t
+    })
   );
 });
 
@@ -213,6 +221,22 @@ app.get("/statti", (_req, res) => {
       locale: res.locals.locale,
       t: res.locals.t,
       currentPath: "/statti"
+    })
+  );
+});
+
+app.get("/feedback", (_req, res) => {
+  const approvedFeedback = statsStore.getApprovedFeedback(24);
+  const cookies = parseCookies(_req.headers.cookie || "");
+  const hasFeedbackAccess = verifyFeedbackAccessToken(
+    cookies[config.feedbackAccessCookieName],
+    config
+  );
+  res.type("html").send(
+    buildFeedbackPage(publicConfig, approvedFeedback, {
+      locale: res.locals.locale,
+      t: res.locals.t,
+      hasFeedbackAccess
     })
   );
 });
@@ -441,6 +465,7 @@ app.get("/admin", (req, res) => {
     startUtcIso: effectiveRange.startUtcIso,
     endUtcIso: effectiveRange.endUtcIso
   });
+  const feedbackModeration = statsStore.getFeedbackModeration(60);
 
   return res.type("html").send(
     buildAdminDashboardPage(publicConfig, {
@@ -452,6 +477,7 @@ app.get("/admin", (req, res) => {
         startIso: effectiveRange.startUtcIso,
         endIso: effectiveRange.endUtcIso
       },
+      feedbackModeration,
       presets: buildAdminPresets(),
       errorMessage: parsedRange.ok ? "" : parsedRange.error,
       timeZone: config.adminTimeZone,
@@ -459,6 +485,27 @@ app.get("/admin", (req, res) => {
       t: res.locals.t
     })
   );
+});
+
+app.post("/admin/feedback/:id/status", (req, res) => {
+  if (!ensureAdminAccess(req, res)) {
+    return;
+  }
+
+  const id = Number(req.params.id);
+  const status = String(req.body?.status || "");
+
+  if (!id || Number.isNaN(id) || !["approved", "rejected"].includes(status)) {
+    return res.redirect("/admin");
+  }
+
+  statsStore.updateFeedbackStatus({
+    id,
+    status,
+    reviewedBy: config.adminUsername
+  });
+
+  return res.redirect("/admin");
 });
 
 app.post("/api/analyze-letter", rateLimiter, upload.single("letter"), async (req, res) => {
@@ -533,6 +580,11 @@ app.post("/api/analyze-letter", rateLimiter, upload.single("letter"), async (req
       originalFilename: req.file.originalname
     });
 
+    res.append(
+      "Set-Cookie",
+      buildFeedbackAccessCookie(createFeedbackAccessToken(config), config)
+    );
+
     return res.json({
       ...analysis,
       meta: {
@@ -550,6 +602,96 @@ app.post("/api/analyze-letter", rateLimiter, upload.single("letter"), async (req
 
     if (status >= 500) {
       console.error("[briefify] analyze-letter failed:", error.message);
+    }
+
+    return res.status(status).json({ error: message });
+  }
+});
+
+app.post("/api/feedback", rateLimiter, upload.none(), async (req, res) => {
+  try {
+    if (!config.turnstileSecretKey) {
+      return res.status(500).json({
+        error: req.t("apiTurnstileMissing")
+      });
+    }
+
+    if (typeof req.body?.website === "string" && req.body.website.trim() !== "") {
+      return res.status(400).json({
+        error: req.t("apiBotRejected")
+      });
+    }
+
+    const cookies = parseCookies(req.headers.cookie || "");
+    if (!verifyFeedbackAccessToken(cookies[config.feedbackAccessCookieName], config)) {
+      return res.status(403).json({
+        error: req.t("apiFeedbackAccessRequired")
+      });
+    }
+
+    const loadedAt = Number(req.body?.form_loaded_at || 0);
+    if (!loadedAt || Date.now() - loadedAt < MIN_HUMAN_FILL_MS) {
+      return res.status(400).json({
+        error: req.t("apiBotWait")
+      });
+    }
+
+    const turnstileToken = String(req.body?.cf_turnstile_response || "").trim();
+    if (!turnstileToken) {
+      return res.status(400).json({
+        error: req.t("apiTurnstileConfirm")
+      });
+    }
+
+    const turnstileResult = await validateTurnstileToken(
+      turnstileToken,
+      req.socket.remoteAddress,
+      config.turnstileSecretKey
+    );
+
+    if (!turnstileResult.success) {
+      return res.status(400).json({
+        error: req.t("apiTurnstileFailed")
+      });
+    }
+
+    const authorName = String(req.body?.author_name || "").trim();
+    const message = String(req.body?.message || "").trim();
+
+    if (!authorName) {
+      return res.status(400).json({
+        error: req.t("apiFeedbackNameRequired")
+      });
+    }
+
+    if (!message) {
+      return res.status(400).json({
+        error: req.t("apiFeedbackMessageRequired")
+      });
+    }
+
+    if (authorName.length > 80 || message.length > 1200) {
+      return res.status(400).json({
+        error: req.t("apiFeedbackTooLong")
+      });
+    }
+
+    statsStore.createFeedbackEntry({
+      locale: normalizeLocale(req.locale || "uk"),
+      authorName,
+      message
+    });
+
+    return res.json({
+      ok: true,
+      message: req.t("feedbackPendingSuccess")
+    });
+  } catch (error) {
+    const status = error.statusCode || error.status || 500;
+    const message = error.publicMessage || req.t("apiFeedbackGenericError");
+
+    if (status >= 500) {
+      console.error("[briefify] feedback failed:", error.message);
     }
 
     return res.status(status).json({ error: message });

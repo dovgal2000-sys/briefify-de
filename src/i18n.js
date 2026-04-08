@@ -61,6 +61,45 @@ export const messages = {
     seoLead:
       "Ми зібрали прості статті українською про Jobcenter, Auslaenderbehoerde, Krankenkasse, Schule та інші часті листи, які приходять у Німеччині.",
     seoButton: "Переглянути всі статті",
+    feedbackEyebrow: "Відгуки",
+    feedbackTitle: "Що кажуть користувачі",
+    feedbackLead:
+      "Можна залишити короткий відгук про сервіс. Після перевірки адміністратором він з'явиться на сайті.",
+    feedbackPageTitle: "Залишити відгук про Briefify",
+    feedbackPageDescription:
+      "Сторінка для відгуків користувачів Briefify. Відгук публікується після перевірки адміністратором.",
+    feedbackNameLabel: "Ваше ім'я або нік",
+    feedbackNamePlaceholder: "Наприклад, Олена з Берліна",
+    feedbackMessageLabel: "Ваш відгук",
+    feedbackMessagePlaceholder:
+      "Що було корисно? Чи допоміг сервіс зрозуміти лист, строки або наступні кроки?",
+    feedbackSubmit: "Надіслати відгук",
+    feedbackFinePrint:
+      "Ми публікуємо лише перевірені відгуки. Не вказуйте у відгуку конфіденційні дані або текст листа повністю.",
+    feedbackEmpty: "Поки що немає опублікованих відгуків. Ви можете залишити перший.",
+    feedbackPendingSuccess:
+      "Дякуємо. Відгук отримано і він з'явиться на сайті після перевірки.",
+    feedbackFormTitle: "Залишити відгук",
+    feedbackAdminTitle: "Модерація відгуків",
+    feedbackAdminPending: "Очікують перевірки",
+    feedbackAdminApproved: "Опубліковано",
+    feedbackAdminRejected: "Відхилено",
+    feedbackAdminApprove: "Схвалити",
+    feedbackAdminReject: "Відхилити",
+    feedbackAdminEmpty: "Нових відгуків на модерацію ще немає.",
+    feedbackStatusPending: "Очікує перевірки",
+    feedbackStatusApproved: "Опубліковано",
+    feedbackStatusRejected: "Відхилено",
+    feedbackOpenForm: "Залишити відгук",
+    feedbackViewAll: "Усі відгуки",
+    feedbackCarouselPrev: "Попередній відгук",
+    feedbackCarouselNext: "Наступний відгук",
+    feedbackFormLead:
+      "Розкажіть коротко, чи був сервіс корисний і в чому саме. Після перевірки відгук може з'явитися на сайті.",
+    feedbackLockedTitle: "Спочатку проаналізуйте документ",
+    feedbackLockedLead:
+      "Залишити відгук можна лише після того, як ви успішно завантажили та розпізнали документ у Briefify.",
+    feedbackLockedCta: "Перейти до аналізу документа",
     articlesTitle: "Статті про німецькі листи",
     articlesDescription:
       "Добірка статей українською про німецькі офіційні листи, Jobcenter, Krankenkasse, Auslaenderbehoerde та шкільні повідомлення.",
@@ -109,6 +148,11 @@ export const messages = {
     frontendNeedReply: "Спочатку отримайте чернетку відповіді.",
     frontendNeedRecipient: "Вкажіть email одержувача.",
     frontendEmailSubject: "Відповідь на ваш лист",
+    frontendFeedbackNameRequired: "Вкажіть, будь ласка, ім'я або нік для відгуку.",
+    frontendFeedbackMessageRequired: "Напишіть короткий текст відгуку.",
+    frontendFeedbackSending: "Надсилаємо відгук...",
+    frontendFeedbackReady:
+      "Дякуємо. Відгук отримано і буде опублікований після перевірки.",
     emptyActions: "Дій не виявлено.",
     emptyDeadlines: "Явних дедлайнів не знайдено.",
     emptyRisks: "Явних ризиків не виявлено.",
@@ -122,7 +166,13 @@ export const messages = {
     apiNeedConsent: "Щоб продовжити, потрібно підтвердити згоду на обробку документа.",
     apiUploadTypes: "Підтримуються лише файли JPG, PNG або PDF.",
     apiEmptyFile: "Файл порожній або пошкоджений.",
-    apiGenericError: "Сталася помилка під час аналізу документа. Спробуйте ще раз трохи пізніше."
+    apiGenericError: "Сталася помилка під час аналізу документа. Спробуйте ще раз трохи пізніше.",
+    apiFeedbackNameRequired: "Вкажіть, будь ласка, ім'я або нік.",
+    apiFeedbackMessageRequired: "Напишіть, будь ласка, текст відгуку.",
+    apiFeedbackTooLong: "Відгук занадто довгий. Скоротіть його, будь ласка.",
+    apiFeedbackGenericError: "Не вдалося надіслати відгук. Спробуйте ще раз трохи пізніше.",
+    apiFeedbackAccessRequired:
+      "Відгук можна залишити лише після успішного аналізу документа на сайті."
   },
   de: {
     htmlLang: "de",
@@ -183,6 +233,45 @@ export const messages = {
     seoLead:
       "Hier finden Sie verständliche Artikel auf Ukrainisch über Jobcenter, Auslaenderbehoerde, Krankenkasse, Schule und andere häufige Schreiben in Deutschland.",
     seoButton: "Alle Artikel ansehen",
+    feedbackEyebrow: "Feedback",
+    feedbackTitle: "Was Nutzer sagen",
+    feedbackLead:
+      "Sie können ein kurzes Feedback zum Service hinterlassen. Nach der Prüfung durch den Administrator erscheint es auf der Website.",
+    feedbackPageTitle: "Feedback zu Briefify hinterlassen",
+    feedbackPageDescription:
+      "Seite für Rückmeldungen zu Briefify. Feedback wird nach der Prüfung durch einen Administrator veröffentlicht.",
+    feedbackNameLabel: "Ihr Name oder Spitzname",
+    feedbackNamePlaceholder: "Zum Beispiel Olena aus Berlin",
+    feedbackMessageLabel: "Ihr Feedback",
+    feedbackMessagePlaceholder:
+      "Was war hilfreich? Hat der Service geholfen, den Brief, die Fristen oder die nächsten Schritte zu verstehen?",
+    feedbackSubmit: "Feedback senden",
+    feedbackFinePrint:
+      "Wir veröffentlichen nur geprüfte Rückmeldungen. Bitte schreiben Sie keine vertraulichen Daten oder den vollständigen Brieftext in das Feedback.",
+    feedbackEmpty: "Es gibt noch keine veröffentlichten Rückmeldungen. Sie können die erste hinterlassen.",
+    feedbackPendingSuccess:
+      "Danke. Ihr Feedback wurde erhalten und erscheint nach der Prüfung auf der Website.",
+    feedbackFormTitle: "Feedback hinterlassen",
+    feedbackAdminTitle: "Feedback-Moderation",
+    feedbackAdminPending: "Warten auf Prüfung",
+    feedbackAdminApproved: "Veröffentlicht",
+    feedbackAdminRejected: "Abgelehnt",
+    feedbackAdminApprove: "Freigeben",
+    feedbackAdminReject: "Ablehnen",
+    feedbackAdminEmpty: "Es gibt noch kein neues Feedback zur Moderation.",
+    feedbackStatusPending: "Wartet auf Prüfung",
+    feedbackStatusApproved: "Veröffentlicht",
+    feedbackStatusRejected: "Abgelehnt",
+    feedbackOpenForm: "Feedback hinterlassen",
+    feedbackViewAll: "Alle Rückmeldungen",
+    feedbackCarouselPrev: "Vorheriges Feedback",
+    feedbackCarouselNext: "Nächstes Feedback",
+    feedbackFormLead:
+      "Schreiben Sie kurz, ob der Service hilfreich war und wobei genau. Nach der Prüfung kann das Feedback auf der Website erscheinen.",
+    feedbackLockedTitle: "Bitte zuerst ein Dokument analysieren",
+    feedbackLockedLead:
+      "Feedback kann erst hinterlassen werden, nachdem Sie ein Dokument in Briefify erfolgreich hochgeladen und analysiert haben.",
+    feedbackLockedCta: "Zur Dokumentanalyse",
     articlesTitle: "Artikel über deutsche Briefe",
     articlesDescription:
       "Sammlung ukrainischer Artikel über deutsche Behördenbriefe, Jobcenter, Krankenkasse, Auslaenderbehoerde und Schulmitteilungen.",
@@ -231,6 +320,11 @@ export const messages = {
     frontendNeedReply: "Bitte erstellen Sie zuerst einen Antwortentwurf.",
     frontendNeedRecipient: "Bitte geben Sie die Empfänger-E-Mail ein.",
     frontendEmailSubject: "Antwort auf Ihr Schreiben",
+    frontendFeedbackNameRequired: "Bitte geben Sie Ihren Namen oder Spitznamen an.",
+    frontendFeedbackMessageRequired: "Bitte schreiben Sie einen kurzen Feedback-Text.",
+    frontendFeedbackSending: "Feedback wird gesendet...",
+    frontendFeedbackReady:
+      "Danke. Ihr Feedback wurde erhalten und wird nach der Prüfung veröffentlicht.",
     emptyActions: "Keine konkreten Maßnahmen erkannt.",
     emptyDeadlines: "Keine eindeutigen Fristen gefunden.",
     emptyRisks: "Keine eindeutigen Risiken erkannt.",
@@ -245,7 +339,14 @@ export const messages = {
     apiUploadTypes: "Es werden nur JPG-, PNG- oder PDF-Dateien unterstützt.",
     apiEmptyFile: "Die Datei ist leer oder beschädigt.",
     apiGenericError:
-      "Beim Analysieren des Dokuments ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut."
+      "Beim Analysieren des Dokuments ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.",
+    apiFeedbackNameRequired: "Bitte geben Sie einen Namen oder Spitznamen an.",
+    apiFeedbackMessageRequired: "Bitte schreiben Sie einen kurzen Feedback-Text.",
+    apiFeedbackTooLong: "Das Feedback ist zu lang. Bitte kürzen Sie den Text.",
+    apiFeedbackGenericError:
+      "Das Feedback konnte nicht gesendet werden. Bitte versuchen Sie es später erneut.",
+    apiFeedbackAccessRequired:
+      "Feedback kann nur nach einer erfolgreichen Dokumentanalyse auf der Website gesendet werden."
   }
 };
 
@@ -294,6 +395,10 @@ export function getFrontendMessages(locale) {
     copyError: t("frontendCopyError"),
     needReply: t("frontendNeedReply"),
     needRecipient: t("frontendNeedRecipient"),
+    feedbackNameRequired: t("frontendFeedbackNameRequired"),
+    feedbackMessageRequired: t("frontendFeedbackMessageRequired"),
+    feedbackSending: t("frontendFeedbackSending"),
+    feedbackReady: t("frontendFeedbackReady"),
     emailSubject: t("frontendEmailSubject"),
     emptyActions: t("emptyActions"),
     emptyDeadlines: t("emptyDeadlines"),

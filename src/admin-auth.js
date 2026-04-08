@@ -77,3 +77,34 @@ export function buildAdminLogoutCookie(config) {
   return `${config.adminCookieName}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
 }
 
+export function createFeedbackAccessToken(config) {
+  const expiresAt = Date.now() + config.feedbackAccessMaxAgeMs;
+  const payload = `feedback|${expiresAt}`;
+  const signature = signPayload(payload, config.adminSessionSecret);
+  return `${payload}|${signature}`;
+}
+
+export function verifyFeedbackAccessToken(token, config) {
+  if (!token || !config.adminSessionSecret) {
+    return false;
+  }
+
+  const parts = token.split("|");
+  if (parts.length !== 3) {
+    return false;
+  }
+
+  const [scope, expiresAtRaw, signature] = parts;
+  const expiresAt = Number(expiresAtRaw);
+  if (scope !== "feedback" || !expiresAt || Number.isNaN(expiresAt) || Date.now() > expiresAt) {
+    return false;
+  }
+
+  const expectedPayload = `${scope}|${expiresAt}`;
+  const expectedSignature = signPayload(expectedPayload, config.adminSessionSecret);
+  return safeEqual(signature, expectedSignature);
+}
+
+export function buildFeedbackAccessCookie(token, config) {
+  return `${config.feedbackAccessCookieName}=${encodeURIComponent(token)}; Path=/; SameSite=Lax; Max-Age=${Math.floor(config.feedbackAccessMaxAgeMs / 1000)}`;
+}

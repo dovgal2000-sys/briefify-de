@@ -52,6 +52,8 @@ export function getServerConfig() {
     adminCookieName: process.env.ADMIN_COOKIE_NAME || "briefify_admin_session",
     adminSessionMaxAgeMs: Number(process.env.ADMIN_SESSION_MAX_AGE_MS || 1000 * 60 * 60 * 12),
     adminTimeZone: process.env.ADMIN_TIME_ZONE || "Europe/Berlin",
+    feedbackAccessCookieName: process.env.FEEDBACK_ACCESS_COOKIE_NAME || "briefify_feedback_access",
+    feedbackAccessMaxAgeMs: Number(process.env.FEEDBACK_ACCESS_MAX_AGE_MS || 1000 * 60 * 60 * 24 * 7),
     allowedMimeTypes: ["image/jpeg", "image/png", "application/pdf"],
     allowedExtensions: ["JPG", "PNG", "PDF"],
     textExtractionMinChars: Number(process.env.TEXT_EXTRACTION_MIN_CHARS || 120)

@@ -1,6 +1,8 @@
 const form = document.querySelector("#analyze-form");
+const feedbackForm = document.querySelector("#feedback-form");
 const fileInput = document.querySelector("#letter");
 const statusBox = document.querySelector("#status-box");
+const feedbackStatusBox = document.querySelector("#feedback-status-box");
 const resultCard = document.querySelector("#result-card");
 const copyButton = document.querySelector("#copy-reply");
 const sendEmailButton = document.querySelector("#send-email");
@@ -14,7 +16,11 @@ const cookieNecessary = document.querySelector("#cookie-necessary");
 const consentInput = document.querySelector("#consent");
 const formLoadedAtInput = document.querySelector("#form-loaded-at");
 const replyEmailInput = document.querySelector("#reply-email");
+const feedbackNameInput = document.querySelector("#feedback-name");
+const feedbackMessageInput = document.querySelector("#feedback-message");
+const feedbackLoadedAtInput = document.querySelector("#feedback-loaded-at");
 const siteConfig = document.querySelector("#site-config");
+const feedbackCarouselTrack = document.querySelector("[data-feedback-carousel-track]");
 let previewObjectUrl = "";
 const COOKIE_BANNER_KEY = "briefify_cookie_notice_closed";
 const COOKIE_PREFERENCES_KEY = "briefify_cookie_preferences";
@@ -72,6 +78,13 @@ function setStatus(message, tone = "info") {
   }
 
   statusBox.className = `status-box status-${tone}`;
+}
+
+function setFeedbackStatus(message, tone = "info") {
+  if (!feedbackStatusBox) return;
+  feedbackStatusBox.textContent = message;
+  feedbackStatusBox.className = `status-box status-${tone}`;
+  feedbackStatusBox.classList.remove("hidden");
 }
 
 function renderList(id, items, emptyText) {
@@ -145,7 +158,7 @@ form?.addEventListener("submit", async (event) => {
   formData.set("website", document.querySelector("#website")?.value || "");
   formData.set(
     "cf_turnstile_response",
-    document.querySelector("[name='cf-turnstile-response']")?.value || ""
+    form.querySelector("[name='cf-turnstile-response']")?.value || ""
   );
 
   resultCard.classList.add("hidden");
@@ -168,6 +181,74 @@ form?.addEventListener("submit", async (event) => {
     setStatus(localeMessages.ready || "Analysis is ready.", "success");
   } catch (error) {
     setStatus(error.message || "Сталася помилка. Спробуйте ще раз.", "error");
+  }
+});
+
+feedbackForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const authorName = (feedbackNameInput?.value || "").trim();
+  const message = (feedbackMessageInput?.value || "").trim();
+  const loadedAt = Number(feedbackLoadedAtInput?.value || 0);
+  const elapsed = Date.now() - loadedAt;
+
+  if (!authorName) {
+    setFeedbackStatus(
+      localeMessages.feedbackNameRequired || "Please enter your name.",
+      "error"
+    );
+    return;
+  }
+
+  if (!message) {
+    setFeedbackStatus(
+      localeMessages.feedbackMessageRequired || "Please enter feedback text.",
+      "error"
+    );
+    return;
+  }
+
+  if (!loadedAt || elapsed < MIN_HUMAN_FILL_MS) {
+    setFeedbackStatus(localeMessages.wait || "Please wait a moment and try again.", "error");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.set("author_name", authorName);
+  formData.set("message", message);
+  formData.set("form_loaded_at", String(loadedAt));
+  formData.set("website", feedbackForm.querySelector("#feedback-website")?.value || "");
+  formData.set(
+    "cf_turnstile_response",
+    feedbackForm.querySelector("[name='cf-turnstile-response']")?.value || ""
+  );
+
+  setFeedbackStatus(
+    localeMessages.feedbackSending || "Feedback is being sent...",
+    "loading"
+  );
+
+  try {
+    const response = await fetch("/api/feedback", {
+      method: "POST",
+      body: formData
+    });
+
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.error || "Feedback submit failed.");
+    }
+
+    feedbackForm.reset();
+    if (feedbackLoadedAtInput) {
+      feedbackLoadedAtInput.value = String(Date.now());
+    }
+    setFeedbackStatus(
+      localeMessages.feedbackReady || "Thank you. Feedback received.",
+      "success"
+    );
+  } catch (error) {
+    setFeedbackStatus(error.message || "Feedback submit failed.", "error");
   }
 });
 
@@ -323,3 +404,22 @@ if (iubendaEnabled) {
 if (formLoadedAtInput) {
   formLoadedAtInput.value = String(Date.now());
 }
+
+if (feedbackLoadedAtInput) {
+  feedbackLoadedAtInput.value = String(Date.now());
+}
+
+document.querySelectorAll("[data-feedback-carousel]").forEach((button) => {
+  button.addEventListener("click", () => {
+    if (!feedbackCarouselTrack) return;
+
+    const card = feedbackCarouselTrack.querySelector(".feedback-card");
+    const step = card ? card.getBoundingClientRect().width + 16 : 320;
+    const direction = button.dataset.feedbackCarousel === "next" ? 1 : -1;
+
+    feedbackCarouselTrack.scrollBy({
+      left: step * direction,
+      behavior: "smooth"
+    });
+  });
+});
