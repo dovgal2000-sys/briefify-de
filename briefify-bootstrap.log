@@ -1,0 +1,48 @@
+[2026-04-08T19:13:16.681Z] boot start; cwd=D:\Projects\Web\Briefify; node=v18.17.1; env.PORT=3000; config.port=3000
+[2026-04-08T19:13:16.686Z] uncaughtException: Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:1751:16)
+    at listenInCluster (node:net:1799:12)
+    at Server.listen (node:net:1887:7)
+    at Function.listen (D:\Projects\Web\Briefify\node_modules\express\lib\application.js:635:24)
+    at file:///D:/Projects/Web/Briefify/server.js:725:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:194:25)
+[2026-04-08T19:13:54.403Z] boot start; cwd=D:\Projects\Web\Briefify; node=v18.17.1; env.PORT=3000; config.port=3000
+[2026-04-08T19:13:54.408Z] uncaughtException: Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:1751:16)
+    at listenInCluster (node:net:1799:12)
+    at Server.listen (node:net:1887:7)
+    at Function.listen (D:\Projects\Web\Briefify\node_modules\express\lib\application.js:635:24)
+    at file:///D:/Projects/Web/Briefify/server.js:725:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:194:25)
+[2026-04-08T19:13:54.409Z] boot start; cwd=D:\Projects\Web\Briefify; node=v18.17.1; env.PORT=3000; config.port=3000
+[2026-04-08T19:13:54.425Z] uncaughtException: Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:1751:16)
+    at listenInCluster (node:net:1799:12)
+    at Server.listen (node:net:1887:7)
+    at Function.listen (D:\Projects\Web\Briefify\node_modules\express\lib\application.js:635:24)
+    at file:///D:/Projects/Web/Briefify/server.js:725:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:194:25)
+[2026-04-08T19:15:41.445Z] boot start; cwd=D:\Projects\Web\Briefify; node=v18.17.1; env.PORT=3000; config.port=3000
+[2026-04-08T19:15:41.450Z] uncaughtException: Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:1751:16)
+    at listenInCluster (node:net:1799:12)
+    at Server.listen (node:net:1887:7)
+    at Function.listen (D:\Projects\Web\Briefify\node_modules\express\lib\application.js:635:24)
+    at file:///D:/Projects/Web/Briefify/server.js:725:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:194:25)
+[2026-04-08T19:17:57.794Z] boot start; cwd=D:\Projects\Web\Briefify; node=v18.17.1; env.PORT=3000; config.port=3000
+[2026-04-08T19:17:57.799Z] uncaughtException: Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:1751:16)
+    at listenInCluster (node:net:1799:12)
+    at Server.listen (node:net:1887:7)
+    at Function.listen (D:\Projects\Web\Briefify\node_modules\express\lib\application.js:635:24)
+    at file:///D:/Projects/Web/Briefify/server.js:725:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:194:25)
+[2026-04-08T19:18:10.271Z] boot start; cwd=D:\Projects\Web\Briefify; node=v18.17.1; env.PORT=3000; config.port=3000
+[2026-04-08T19:18:10.276Z] uncaughtException: Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:1751:16)
+    at listenInCluster (node:net:1799:12)
+    at Server.listen (node:net:1887:7)
+    at Function.listen (D:\Projects\Web\Briefify\node_modules\express\lib\application.js:635:24)
+    at file:///D:/Projects/Web/Briefify/server.js:725:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:194:25)

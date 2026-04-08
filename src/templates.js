@@ -869,6 +869,7 @@ export function buildAdminDashboardPage(
     report,
     reportRange,
     feedbackModeration,
+    feedbackFilter = "all",
     presets,
     errorMessage = "",
     timeZone,
@@ -998,24 +999,31 @@ export function buildAdminDashboardPage(
               </div>
             </section>
 
-            <section class="admin-report-card">
+            <section id="feedback-moderation" class="admin-report-card">
               <div class="admin-report-head">
                 <h2>${t("feedbackAdminTitle")}</h2>
               </div>
 
               <div class="admin-summary-grid admin-summary-grid-feedback">
-                <article class="admin-summary-card">
+                <a class="admin-summary-card admin-summary-card-link${feedbackFilter === "pending" ? " admin-summary-card-active" : ""}" href="/admin?feedback_status=pending#feedback-moderation">
                   <span>${t("feedbackAdminPending")}</span>
                   <strong>${feedbackModeration.counts.pending || 0}</strong>
-                </article>
-                <article class="admin-summary-card">
+                </a>
+                <a class="admin-summary-card admin-summary-card-link${feedbackFilter === "approved" ? " admin-summary-card-active" : ""}" href="/admin?feedback_status=approved#feedback-moderation">
                   <span>${t("feedbackAdminApproved")}</span>
                   <strong>${feedbackModeration.counts.approved || 0}</strong>
-                </article>
-                <article class="admin-summary-card">
+                </a>
+                <a class="admin-summary-card admin-summary-card-link${feedbackFilter === "rejected" ? " admin-summary-card-active" : ""}" href="/admin?feedback_status=rejected#feedback-moderation">
                   <span>${t("feedbackAdminRejected")}</span>
                   <strong>${feedbackModeration.counts.rejected || 0}</strong>
-                </article>
+                </a>
+              </div>
+
+              <div class="admin-preset-list">
+                <a class="category-filter${feedbackFilter === "all" ? " category-filter-active" : ""}" href="/admin#feedback-moderation">Усі</a>
+                <a class="category-filter${feedbackFilter === "pending" ? " category-filter-active" : ""}" href="/admin?feedback_status=pending#feedback-moderation">${t("feedbackAdminPending")}</a>
+                <a class="category-filter${feedbackFilter === "approved" ? " category-filter-active" : ""}" href="/admin?feedback_status=approved#feedback-moderation">${t("feedbackAdminApproved")}</a>
+                <a class="category-filter${feedbackFilter === "rejected" ? " category-filter-active" : ""}" href="/admin?feedback_status=rejected#feedback-moderation">${t("feedbackAdminRejected")}</a>
               </div>
 
               <div class="admin-feedback-list">

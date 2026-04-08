@@ -93,6 +93,7 @@ export function createStatsStore(config) {
   const feedbackModerationStmt = db.prepare(`
     SELECT id, created_at, locale, author_name, message, status, reviewed_at, reviewed_by
     FROM feedback_entries
+    WHERE (@status IS NULL OR status = @status)
     ORDER BY
       CASE status
         WHEN 'pending' THEN 0
@@ -100,7 +101,7 @@ export function createStatsStore(config) {
         ELSE 2
       END,
       created_at DESC
-    LIMIT ?
+    LIMIT @limit
   `);
 
   const feedbackByIdStmt = db.prepare(`
@@ -166,10 +167,10 @@ export function createStatsStore(config) {
       return approvedFeedbackStmt.all(limit);
     },
 
-    getFeedbackModeration(limit = 50) {
+    getFeedbackModeration({ limit = 50, status = null } = {}) {
       return {
         counts: feedbackCountsStmt.get(),
-        entries: feedbackModerationStmt.all(limit)
+        entries: feedbackModerationStmt.all({ status, limit })
       };
     },
 

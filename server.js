@@ -441,6 +441,11 @@ app.get("/admin", (req, res) => {
     return;
   }
 
+  const feedbackFilterRaw = String(req.query.feedback_status || "all");
+  const feedbackFilter = ["pending", "approved", "rejected"].includes(feedbackFilterRaw)
+    ? feedbackFilterRaw
+    : "all";
+
   const defaultRange = getDefaultReportRange(config.adminTimeZone);
   const parsedRange =
     req.query.start && req.query.end
@@ -465,7 +470,10 @@ app.get("/admin", (req, res) => {
     startUtcIso: effectiveRange.startUtcIso,
     endUtcIso: effectiveRange.endUtcIso
   });
-  const feedbackModeration = statsStore.getFeedbackModeration(60);
+  const feedbackModeration = statsStore.getFeedbackModeration({
+    limit: 60,
+    status: feedbackFilter === "all" ? null : feedbackFilter
+  });
 
   return res.type("html").send(
     buildAdminDashboardPage(publicConfig, {
@@ -478,6 +486,7 @@ app.get("/admin", (req, res) => {
         endIso: effectiveRange.endUtcIso
       },
       feedbackModeration,
+      feedbackFilter,
       presets: buildAdminPresets(),
       errorMessage: parsedRange.ok ? "" : parsedRange.error,
       timeZone: config.adminTimeZone,

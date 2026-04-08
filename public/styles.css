@@ -1184,6 +1184,20 @@ h2 {
   font-weight: 700;
 }
 
+.admin-summary-card-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.admin-summary-card-link:hover {
+  transform: translateY(-1px);
+}
+
+.admin-summary-card-active {
+  border-color: rgba(0, 87, 183, 0.34);
+  box-shadow: 0 14px 30px rgba(0, 87, 183, 0.12);
+}
+
 .admin-stat-card strong,
 .admin-summary-card strong {
   font-size: clamp(1.6rem, 2.6vw, 2.4rem);
