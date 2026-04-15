@@ -304,16 +304,31 @@ function renderFeedbackStatus(status, t) {
   }
 }
 
+function renderArticleCover(article, { hero = false } = {}) {
+  const logoHtml = article.logoPath
+    ? `
+      <div class="article-cover-logo-shell${hero ? " article-cover-logo-shell-hero" : ""}">
+        <img class="article-cover-logo${hero ? " article-cover-logo-hero" : ""}" src="${article.logoPath}" alt="${escapeHtml(article.logoAlt || article.coverTitle)}" loading="lazy" />
+      </div>
+    `
+    : "";
+
+  return `
+    <div class="article-cover ${hero ? "article-cover-hero " : ""}${article.coverTone}">
+      ${logoHtml}
+      <span class="article-cover-kicker">${article.category.title}</span>
+      <strong>${article.coverTitle}</strong>
+      <span>${article.coverSubtitle}</span>
+    </div>
+  `;
+}
+
 function renderArticleCards(articles, { locale = "uk", t }) {
   return articles
     .map(
       (article) => `
         <article class="article-card">
-          <div class="article-cover ${article.coverTone}">
-            <span class="article-cover-kicker">${article.category.title}</span>
-            <strong>${article.coverTitle}</strong>
-            <span>${article.coverSubtitle}</span>
-          </div>
+          ${renderArticleCover(article)}
           <div class="article-card-topline">
             <span class="article-category-chip">${article.category.title}</span>
             <span class="article-card-meta">${formatArticleDate(article.publishedAt, locale)} · ${article.readingTime}</span>
@@ -928,11 +943,7 @@ export function buildArticlePage(article, relatedArticles, publicConfig, { local
 
           <header class="article-hero">
             <span class="eyebrow">${t("articleSeoEyebrow")}</span>
-            <div class="article-cover article-cover-hero ${article.coverTone}">
-              <span class="article-cover-kicker">${article.category.title}</span>
-              <strong>${article.coverTitle}</strong>
-              <span>${article.coverSubtitle}</span>
-            </div>
+            ${renderArticleCover(article, { hero: true })}
             <h1>${article.title}</h1>
             <p class="lead">${article.description}</p>
             <div class="article-meta">

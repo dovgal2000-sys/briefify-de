@@ -1,4 +1,5 @@
 import articleAuslaenderbehoerde from "./auslaenderbehoerde.js";
+import articleDovidkaPartner from "./dovidka-partner.js";
 import articleExamples from "./examples.js";
 import articleHowToUnderstand from "./how-to-understand.js";
 import articleJobcenterAnhoerung from "./jobcenter-anhoerung.js";
@@ -7,6 +8,7 @@ import articleJobcenterLetter from "./jobcenter-letter.js";
 import articleJobcenterReply from "./jobcenter-reply.js";
 import articleKrankenkasse from "./krankenkasse.js";
 import articleKuendigung from "./kuendigung.js";
+import articleSchweizdatenPartner from "./schweizdaten-partner.js";
 import articleSchoolLetter from "./school-letter.js";
 
 const categoryMap = {
@@ -144,10 +146,34 @@ const articleMeta = {
       uk: { coverTitle: "Формуляри", coverSubtitle: "анкети та додаткові дані" },
       de: { coverTitle: "Formulare", coverSubtitle: "Anträge und Zusatzangaben" }
     }
+  },
+  "dovidka-de-ukrayinski-biznesy-v-nimechchyni": {
+    publishedAt: "2026-04-15",
+    categoryKey: "guides",
+    coverTone: "cover-guide",
+    logoPath: "/assets/partner-dovidka.jpg",
+    logoAlt: "Dovidka.de",
+    translations: {
+      uk: { coverTitle: "Dovidka.de", coverSubtitle: "українські бізнеси в Німеччині" },
+      de: { coverTitle: "Dovidka.de", coverSubtitle: "ukrainische Services finden" }
+    }
+  },
+  "schweizdaten-com-statystyka-shveytsariya": {
+    publishedAt: "2026-04-14",
+    categoryKey: "guides",
+    coverTone: "cover-guide",
+    logoPath: "/assets/partner-schweizdaten-logo.svg",
+    logoAlt: "SchweizDaten",
+    translations: {
+      uk: { coverTitle: "SchweizDaten", coverSubtitle: "Швейцарія в цифрах" },
+      de: { coverTitle: "SchweizDaten", coverSubtitle: "Schweiz in Zahlen" }
+    }
   }
 };
 
 const rawArticles = [
+  articleDovidkaPartner,
+  articleSchweizdatenPartner,
   articleJobcenterLetter,
   articleJobcenterAnhoerung,
   articleSchoolLetter,
@@ -186,6 +212,8 @@ function localizeArticle(article, locale) {
     coverTitle: metaTranslation.coverTitle || translation.title,
     coverSubtitle: metaTranslation.coverSubtitle || category.title,
     coverTone: meta.coverTone || "cover-guide",
+    logoPath: meta.logoPath || "",
+    logoAlt: meta.logoAlt || "",
     ogImagePath: `/assets/og/${article.slug}.png`
   };
 }
@@ -222,4 +250,3 @@ export function getArticlesByCategory(categorySlug, locale = "uk") {
 export function getCategoryBySlug(categorySlug, locale = "uk") {
   return getAllCategories(locale).find((category) => category.slug === categorySlug) || null;
 }
-
