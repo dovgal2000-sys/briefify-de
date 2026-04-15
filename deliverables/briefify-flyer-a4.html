@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Briefify.de Flyer A4 Duplex</title>
+  <style>
+    :root {
+      --blue: #0057b7;
+      --blue-dark: #163457;
+      --blue-soft: #eef5ff;
+      --yellow: #ffd700;
+      --yellow-soft: #fff6cc;
+      --text: #18324f;
+      --muted: #516780;
+      --line: #cbd9ea;
+      --white: #ffffff;
+      --shadow: 0 18px 42px rgba(0, 56, 120, 0.16);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background:
+        linear-gradient(180deg, rgba(0, 87, 183, 0.08), rgba(255, 215, 0, 0.08)),
+        #dfe9f7;
+      color: var(--text);
+      font-family: "Segoe UI", Arial, sans-serif;
+      line-height: 1.35;
+      padding: 24px;
+    }
+
+    .page {
+      width: 210mm;
+      height: 297mm;
+      margin: 0 auto 24px;
+      background:
+        radial-gradient(circle at top right, rgba(255, 215, 0, 0.16), transparent 28%),
+        radial-gradient(circle at bottom left, rgba(0, 87, 183, 0.1), transparent 30%),
+        var(--white);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .page + .page {
+      page-break-before: always;
+      break-before: page;
+    }
+
+    .page:last-child {
+      margin-bottom: 0;
+    }
+
+    .stripe-top {
+      height: 16px;
+      background: linear-gradient(90deg, var(--blue) 0 72%, var(--yellow) 72% 100%);
+    }
+
+    .wrap {
+      padding: 20mm 16mm 16mm;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 14mm;
+      align-items: center;
+      margin-bottom: 12mm;
+    }
+
+    .brand-mark {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .brand-mark img {
+      width: 170px;
+      height: auto;
+    }
+
+    .tagline {
+      display: inline-block;
+      padding: 7px 12px;
+      border-radius: 8px;
+      background: var(--yellow-soft);
+      color: var(--blue-dark);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    .headline {
+      font-size: 29px;
+      line-height: 1.08;
+      margin-bottom: 12px;
+      max-width: 12ch;
+    }
+
+    .subhead {
+      color: var(--muted);
+      font-size: 15px;
+      max-width: 48ch;
+    }
+
+    .hero-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(0, 87, 183, 0.08) 0 54%, rgba(255, 215, 0, 0.12) 54% 100%);
+      padding: 14px;
+    }
+
+    .mockup {
+      display: grid;
+      grid-template-columns: 0.95fr 1.05fr;
+      gap: 12px;
+      align-items: stretch;
+      margin-bottom: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(0, 87, 183, 0.12);
+    }
+
+    .mockup-app {
+      border-radius: 8px;
+      background: linear-gradient(180deg, #0f5fbf, #0a4ea0);
+      display: grid;
+      place-items: center;
+      min-height: 128px;
+      padding: 14px;
+    }
+
+    .mockup-app img {
+      width: 84px;
+      height: auto;
+      display: block;
+      filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.12));
+    }
+
+    .mockup-copy {
+      display: grid;
+      align-content: start;
+      gap: 8px;
+      min-height: 128px;
+    }
+
+    .mockup-kicker {
+      display: inline-flex;
+      width: fit-content;
+      align-items: center;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: rgba(255, 215, 0, 0.3);
+      color: var(--blue-dark);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .mockup-title {
+      font-size: 24px;
+      line-height: 0.94;
+      color: var(--blue-dark);
+      font-weight: 800;
+      word-break: break-word;
+    }
+
+    .mockup-subtitle {
+      font-size: 9.5px;
+      line-height: 1.15;
+      color: var(--blue-dark);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      max-width: 18ch;
+    }
+
+    .mockup-lines {
+      display: grid;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .mockup-line {
+      height: 10px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(0, 87, 183, 0.14), rgba(0, 87, 183, 0.06));
+    }
+
+    .mockup-line.wide {
+      width: 100%;
+    }
+
+    .mockup-line.mid {
+      width: 76%;
+    }
+
+    .mockup-line.short {
+      width: 58%;
+    }
+
+    .hero-points {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .hero-point {
+      padding: 10px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid rgba(0, 87, 183, 0.1);
+      min-height: 84px;
+    }
+
+    .hero-point strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 4px;
+      color: var(--blue-dark);
+    }
+
+    .hero-point span {
+      display: block;
+      color: var(--muted);
+      font-size: 11.5px;
+    }
+
+    .section-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10mm;
+      margin-bottom: 10mm;
+    }
+
+    .section-box {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.92);
+      padding: 13px 14px;
+    }
+
+    .section-box h2 {
+      font-size: 15px;
+      color: var(--blue-dark);
+      margin-bottom: 10px;
+    }
+
+    .section-box p + p {
+      margin-top: 8px;
+    }
+
+    .lead-line {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .copy {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .list {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .list li + li {
+      margin-top: 6px;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .step {
+      border-radius: 8px;
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(0, 87, 183, 0.06), rgba(255, 215, 0, 0.12));
+      border: 1px solid rgba(0, 87, 183, 0.08);
+      min-height: 126px;
+    }
+
+    .step-number {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--blue);
+      color: var(--white);
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .step strong {
+      display: block;
+      font-size: 12.5px;
+      color: var(--blue-dark);
+      margin-bottom: 5px;
+    }
+
+    .step span {
+      display: block;
+      color: var(--muted);
+      font-size: 11.5px;
+    }
+
+    .bottom {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 10mm;
+      align-items: start;
+    }
+
+    .cta {
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(0, 87, 183, 0.96), rgba(24, 76, 134, 0.96));
+      color: var(--white);
+      padding: 14px;
+      min-height: 100%;
+    }
+
+    .cta h2 {
+      font-size: 17px;
+      margin-bottom: 10px;
+    }
+
+    .cta p {
+      font-size: 12.5px;
+      color: rgba(255, 255, 255, 0.92);
+    }
+
+    .cta p + p {
+      margin-top: 8px;
+    }
+
+    .cta .url {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: rgba(255, 215, 0, 0.96);
+      color: #163457;
+      font-size: 16px;
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    .note-box {
+      display: grid;
+      gap: 10px;
+    }
+
+    .note {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: rgba(255, 249, 219, 0.72);
+    }
+
+    .note strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--blue-dark);
+      font-size: 12.5px;
+    }
+
+    .note span {
+      display: block;
+      color: var(--muted);
+      font-size: 11.5px;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-top: 10mm;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .footer strong {
+      color: var(--blue-dark);
+    }
+
+    @page {
+      size: A4;
+      margin: 0;
+    }
+
+    @media print {
+      body {
+        padding: 0;
+        background: #fff;
+      }
+
+      .page {
+        box-shadow: none;
+        margin: 0;
+        height: 297mm;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="stripe-top"></div>
+    <div class="wrap">
+      <section class="hero">
+        <div>
+          <div class="brand-mark">
+            <img src="../public/logo.svg" alt="Briefify.de" />
+          </div>
+          <div class="tagline">Vorderseite | Deutsch</div>
+          <h1 class="headline">Briefe aus Deutschland verständlich machen</h1>
+          <p class="subhead">
+            Briefify.de hilft ukrainischsprachigen Menschen in Deutschland, amtliche und alltägliche Schreiben schnell zu verstehen und eine passende Antwort vorzubereiten.
+          </p>
+        </div>
+        <div class="hero-card">
+          <div class="mockup" aria-label="Briefify Vorschau">
+            <div class="mockup-app">
+              <img src="../public/favicon.svg" alt="Briefify Symbol" />
+            </div>
+            <div class="mockup-copy">
+              <span class="mockup-kicker">Briefify.de</span>
+              <div class="mockup-title">DECODE</div>
+              <div class="mockup-subtitle">German letters in Ukrainian</div>
+              <div class="mockup-lines">
+                <div class="mockup-line wide"></div>
+                <div class="mockup-line mid"></div>
+                <div class="mockup-line short"></div>
+              </div>
+            </div>
+          </div>
+          <div class="hero-points">
+            <div class="hero-point">
+              <strong>Upload</strong>
+              <span>Foto oder PDF eines Briefs hochladen</span>
+            </div>
+            <div class="hero-point">
+              <strong>Analyse</strong>
+              <span>Inhalt, Fristen und Risiken sofort erkennen</span>
+            </div>
+            <div class="hero-point">
+              <strong>Erklärung</strong>
+              <span>Klare Sprache auf Ukrainisch oder Deutsch</span>
+            </div>
+            <div class="hero-point">
+              <strong>Antwort</strong>
+              <span>Entwurf in der Originalsprache des Dokuments</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-grid">
+        <article class="section-box">
+          <h2>Wofür eignet sich Briefify.de?</h2>
+          <p class="lead-line">Digitale Hilfe für Beratung, Integration und schnelle Orientierung.</p>
+          <p class="copy">
+            Briefify.de erklärt Schreiben von Jobcenter, Krankenkasse, Schule, Ausländerbehörde, Vermietern oder anderen Stellen in einfacher Sprache.
+          </p>
+          <ul class="list">
+            <li>Verständliche Zusammenfassung des Schreibens</li>
+            <li>Wichtige Fristen und nächste Schritte</li>
+            <li>Hinweise auf Risiken bei Nichtreaktion</li>
+            <li>Höflicher Antwortentwurf in der Sprache des Originals</li>
+          </ul>
+        </article>
+
+        <article class="section-box">
+          <h2>Mehrwert für Agentur- und Beratungsarbeit</h2>
+          <p class="lead-line">Schneller Zugang zu komplexen Inhalten ohne sprachliche Hürde.</p>
+          <ul class="list">
+            <li>unterstützt bei Erstorientierung und Fallvorbereitung,</li>
+            <li>reduziert Unsicherheit bei amtlichen Schreiben,</li>
+            <li>hilft Betroffenen, Fristen nicht zu verpassen,</li>
+            <li>entlastet im Alltag von Beratung und Begleitung.</li>
+          </ul>
+        </article>
+      </section>
+
+      <section class="section-box" style="margin-bottom: 10mm;">
+        <h2>So funktioniert es</h2>
+        <div class="flow">
+          <div class="step">
+            <div class="step-number">1</div>
+            <strong>Upload</strong>
+            <span>JPG, PNG oder PDF hochladen.</span>
+          </div>
+          <div class="step">
+            <div class="step-number">2</div>
+            <strong>Erkennung</strong>
+            <span>Der Text wird aus dem Dokument gelesen.</span>
+          </div>
+          <div class="step">
+            <div class="step-number">3</div>
+            <strong>Klare Ausgabe</strong>
+            <span>Zusammenfassung, Fristen, Risiken und Antwortentwurf.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="bottom">
+        <article class="cta">
+          <h2>Für Menschen, die schnell verstehen müssen, was im Brief wirklich steht</h2>
+          <p>Geeignet für Beratungsstellen, Integrationsarbeit, Ehrenamt, Sozialbegleitung und direkt für betroffene Familien.</p>
+          <a class="url" href="https://www.briefify.de">www.briefify.de</a>
+        </article>
+
+        <aside class="note-box">
+          <div class="note">
+            <strong>Typische Fälle</strong>
+            <span>Jobcenter, Krankenkasse, Schule, Kündigung, Behördenpost, Formulare.</span>
+          </div>
+          <div class="note">
+            <strong>Wichtiger Hinweis</strong>
+            <span>Briefify ist keine Rechtsberatung.</span>
+          </div>
+        </aside>
+      </section>
+
+      <footer class="footer">
+        <div><strong>Briefify.de</strong> erklaert deutsche Briefe klar und schnell.</div>
+        <div>Seite 1 | Deutsch</div>
+      </footer>
+    </div>
+  </main>
+
+  <main class="page">
+    <div class="stripe-top"></div>
+    <div class="wrap">
+      <section class="hero">
+        <div>
+          <div class="brand-mark">
+            <img src="../public/logo.svg" alt="Briefify.de" />
+          </div>
+          <div class="tagline">Зворотний бік | Українська</div>
+          <h1 class="headline">Пояснювати листи з Німеччини просто і швидко</h1>
+          <p class="subhead">
+            Briefify.de допомагає українськомовним людям у Німеччині швидко зрозуміти офіційні та повсякденні листи й підготувати відповідь.
+          </p>
+        </div>
+        <div class="hero-card">
+          <div class="mockup" aria-label="Briefify прев'ю">
+            <div class="mockup-app">
+              <img src="../public/favicon.svg" alt="Символ Briefify" />
+            </div>
+            <div class="mockup-copy">
+              <span class="mockup-kicker">Briefify.de</span>
+              <div class="mockup-title">DECODE</div>
+              <div class="mockup-subtitle">German letters in Ukrainian</div>
+              <div class="mockup-lines">
+                <div class="mockup-line wide"></div>
+                <div class="mockup-line mid"></div>
+                <div class="mockup-line short"></div>
+              </div>
+            </div>
+          </div>
+          <div class="hero-points">
+            <div class="hero-point">
+              <strong>Завантаження</strong>
+              <span>Фото або PDF листа</span>
+            </div>
+            <div class="hero-point">
+              <strong>Аналіз</strong>
+              <span>Зміст, строки та ризики в одному місці</span>
+            </div>
+            <div class="hero-point">
+              <strong>Пояснення</strong>
+              <span>Зрозуміло українською або німецькою</span>
+            </div>
+            <div class="hero-point">
+              <strong>Відповідь</strong>
+              <span>Чернетка мовою оригіналу документа</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-grid">
+        <article class="section-box">
+          <h2>Для чого підходить Briefify.de?</h2>
+          <p class="lead-line">Цифрова допомога для консультацій, інтеграції та швидкого розуміння.</p>
+          <p class="copy">
+            Briefify.de простою мовою пояснює листи від Jobcenter, Krankenkasse, школи, Ausländerbehörde, орендодавця чи інших установ.
+          </p>
+          <ul class="list">
+            <li>короткий і зрозумілий зміст листа,</li>
+            <li>важливі строки та наступні кроки,</li>
+            <li>ризики, якщо не відреагувати вчасно,</li>
+            <li>ввічлива чернетка відповіді мовою оригіналу.</li>
+          </ul>
+        </article>
+
+        <article class="section-box">
+          <h2>Користь для агентурної та консультаційної роботи</h2>
+          <p class="lead-line">Швидкий доступ до складних текстів без мовного бар’єру.</p>
+          <ul class="list">
+            <li>допомагає на першому етапі консультації,</li>
+            <li>зменшує тривогу через незрозумілі офіційні листи,</li>
+            <li>допомагає не пропустити важливі дедлайни,</li>
+            <li>полегшує щоденну роботу консультантів і супроводу.</li>
+          </ul>
+        </article>
+      </section>
+
+      <section class="section-box" style="margin-bottom: 10mm;">
+        <h2>Як це працює</h2>
+        <div class="flow">
+          <div class="step">
+            <div class="step-number">1</div>
+            <strong>Завантаження</strong>
+            <span>Завантажити JPG, PNG або PDF.</span>
+          </div>
+          <div class="step">
+            <div class="step-number">2</div>
+            <strong>Розпізнавання</strong>
+            <span>Система зчитує текст із документа.</span>
+          </div>
+          <div class="step">
+            <div class="step-number">3</div>
+            <strong>Зрозумілий результат</strong>
+            <span>Короткий зміст, дедлайни, ризики та чернетка відповіді.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="bottom">
+        <article class="cta">
+          <h2>Для людей, яким потрібно швидко зрозуміти, що насправді написано в листі</h2>
+          <p>Підходить для консультаційних центрів, інтеграційної роботи, волонтерів, соціального супроводу та самих сімей.</p>
+          <a class="url" href="https://www.briefify.de">www.briefify.de</a>
+        </article>
+
+        <aside class="note-box">
+          <div class="note">
+            <strong>Типові випадки</strong>
+            <span>Jobcenter, Krankenkasse, школа, розірвання договору, листи від установ, формуляри.</span>
+          </div>
+          <div class="note">
+            <strong>Важливий коментар</strong>
+            <span>Briefify не є юридичною консультацією.</span>
+          </div>
+        </aside>
+      </section>
+
+      <footer class="footer">
+        <div><strong>Briefify.de</strong> пояснює німецькі листи просто і швидко.</div>
+        <div>Сторінка 2 | Українська</div>
+      </footer>
+    </div>
+  </main>
+</body>
+</html>

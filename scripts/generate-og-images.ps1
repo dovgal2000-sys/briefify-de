@@ -4,6 +4,7 @@ $ErrorActionPreference = "Stop"
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $outputDir = Join-Path $projectRoot "public\\og"
+$homeOgPath = Join-Path $projectRoot "public\\og-image.png"
 
 New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
 
@@ -175,4 +176,75 @@ foreach ($article in $articles) {
   $bmp.Dispose()
 }
 
-Write-Host "OG images regenerated:" $articles.Count
+function New-HomeOgImage($outputPath) {
+  $bmp = New-Object System.Drawing.Bitmap 1200, 630
+  $graphics = [System.Drawing.Graphics]::FromImage($bmp)
+  $graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
+  $graphics.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::AntiAliasGridFit
+  $graphics.Clear([System.Drawing.ColorTranslator]::FromHtml("#EDF5FF"))
+
+  $topBlue = New-Brush "#0057B7"
+  $topYellow = New-Brush "#FFD700"
+  $cardBrush = New-Brush "#FFFFFF"
+  $brandBrush = New-Brush "#14345A"
+  $mutedBrush = New-Brush "#49627F"
+  $lineBrush = New-Brush "#D9E3F2"
+  $iconBlueBrush = New-Brush "#0F5FBF"
+  $iconWhiteBrush = New-Brush "#FFFFFF"
+  $chipBrush = New-Brush "#FFF0AA"
+  $sunBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(238, 255, 191, 0))
+
+  $graphics.FillRectangle($topBlue, 0, 0, 1200, 22)
+  $graphics.FillRectangle($topYellow, 0, 22, 1200, 12)
+  Fill-RoundedRect $graphics $cardBrush 70 86 1060 458 42
+  Fill-RoundedRect $graphics $iconBlueBrush 92 140 458 360 34
+  $graphics.FillEllipse($sunBrush, 905, 92, 180, 180)
+
+  Fill-RoundedRect $graphics $iconWhiteBrush 170 218 220 128 28
+  $tail = New-Object System.Drawing.Point[] 3
+  $tail[0] = New-Object System.Drawing.Point 222, 338
+  $tail[1] = New-Object System.Drawing.Point 198, 400
+  $tail[2] = New-Object System.Drawing.Point 264, 338
+  $graphics.FillPolygon($iconWhiteBrush, $tail)
+  $graphics.FillRectangle($iconBlueBrush, 248, 252, 112, 12)
+  $graphics.FillRectangle($iconBlueBrush, 248, 294, 92, 12)
+
+  Fill-RoundedRect $graphics $chipBrush 610 138 170 42 20
+
+  $chipFont = New-Object System.Drawing.Font("Segoe UI", 16, [System.Drawing.FontStyle]::Bold)
+  $brandFont = New-Object System.Drawing.Font("Segoe UI", 20, [System.Drawing.FontStyle]::Bold)
+  $titleFont = New-Object System.Drawing.Font("Segoe UI", 46, [System.Drawing.FontStyle]::Bold)
+  $subtitleFont = New-Object System.Drawing.Font("Segoe UI", 20, [System.Drawing.FontStyle]::Regular)
+
+  $graphics.DrawString("BRIEFIFY.DE", $chipFont, $brandBrush, 628, 147)
+  $graphics.DrawString("DECODE", $titleFont, $brandBrush, 608, 208)
+  $graphics.DrawString("GERMAN LETTERS", $titleFont, $brandBrush, 608, 270)
+  $graphics.DrawString("IN UKRAINIAN", $titleFont, $brandBrush, 608, 332)
+
+  $graphics.FillRectangle($lineBrush, 650, 418, 316, 22)
+  $graphics.FillRectangle($lineBrush, 650, 470, 252, 22)
+  $graphics.FillRectangle($lineBrush, 650, 522, 190, 22)
+
+  $chipFont.Dispose()
+  $brandFont.Dispose()
+  $titleFont.Dispose()
+  $subtitleFont.Dispose()
+  $sunBrush.Dispose()
+  $chipBrush.Dispose()
+  $iconWhiteBrush.Dispose()
+  $iconBlueBrush.Dispose()
+  $lineBrush.Dispose()
+  $mutedBrush.Dispose()
+  $brandBrush.Dispose()
+  $cardBrush.Dispose()
+  $topYellow.Dispose()
+  $topBlue.Dispose()
+
+  $bmp.Save($outputPath, [System.Drawing.Imaging.ImageFormat]::Png)
+  $graphics.Dispose()
+  $bmp.Dispose()
+}
+
+New-HomeOgImage $homeOgPath
+
+Write-Host "OG images regenerated:" $articles.Count "articles + home image"
