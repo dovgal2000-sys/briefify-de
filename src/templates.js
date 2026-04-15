@@ -756,6 +756,15 @@ export function buildPartnersPage(publicConfig, { locale = "uk", t, currentPath 
           name: t("partnersFirstName"),
           url: "https://dovidka.de/"
         }
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        item: {
+          "@type": "WebSite",
+          name: t("partnersSecondName"),
+          url: "https://schweizdaten.com/"
+        }
       }
     ]
   };
@@ -827,6 +836,39 @@ export function buildPartnersPage(publicConfig, { locale = "uk", t, currentPath 
 
               <div class="partner-actions">
                 <a class="primary-button" href="https://dovidka.de/" target="_blank" rel="noopener noreferrer">${t("partnersVisit")}</a>
+              </div>
+            </article>
+
+            <article class="partner-card">
+              <div class="partner-card-head">
+                <img class="partner-logo" src="/assets/partner-schweizdaten.jpg" alt="${t("partnersSecondName")} logo" loading="lazy" />
+                <div class="partner-card-copy">
+                  <div class="partner-meta">
+                    <span class="article-category-chip">${t("partnersCategoryDirectories")}</span>
+                    <span class="partner-site">${t("partnersSiteLabel")}: <a href="https://schweizdaten.com/" target="_blank" rel="noopener noreferrer">schweizdaten.com</a></span>
+                  </div>
+                  <h2>${t("partnersSecondName")}</h2>
+                  <p>${t("partnersSecondDescription")}</p>
+                </div>
+              </div>
+
+              <div class="partner-card-body">
+                <div class="partner-details">
+                  <strong>${t("partnersCategoryLabel")}</strong>
+                  <span>${t("partnersCategoryDirectories")}</span>
+                </div>
+                <section class="partner-about">
+                  <h3>${t("partnersAboutTitle")}</h3>
+                  <ul>
+                    <li>${t("partnersSecondBenefit1")}</li>
+                    <li>${t("partnersSecondBenefit2")}</li>
+                    <li>${t("partnersSecondBenefit3")}</li>
+                  </ul>
+                </section>
+              </div>
+
+              <div class="partner-actions">
+                <a class="primary-button" href="https://schweizdaten.com/" target="_blank" rel="noopener noreferrer">${t("partnersVisit")}</a>
               </div>
             </article>
           </div>

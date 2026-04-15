@@ -784,6 +784,8 @@ h2 {
 
 .partner-note {
   padding: 24px;
+  align-self: stretch;
+  grid-row: span 2;
 }
 
 .partner-note ul,

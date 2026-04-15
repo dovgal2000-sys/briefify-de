@@ -131,6 +131,12 @@ export const messages = {
     partnersFirstBenefit1: "Пошук українських бізнесів у різних містах Німеччини.",
     partnersFirstBenefit2: "Категорії послуг: юристи, лікарі, перекладачі, перевезення, навчання та інші.",
     partnersFirstBenefit3: "Зручний формат каталогу для швидкого пошуку потрібних контактів.",
+    partnersSecondName: "SchweizDaten.com",
+    partnersSecondDescription:
+      "Статистичний портал про Швейцарію з даними про зарплати, податки, житло, вартість життя, кантони та медичне страхування.",
+    partnersSecondBenefit1: "Порівняння кантонів за зарплатами, податками, населенням і витратами.",
+    partnersSecondBenefit2: "Зведення по темах: житло, Krankenkasse, безробіття, освіта та інші показники.",
+    partnersSecondBenefit3: "Корисно для тих, хто шукає цифри та орієнтири по життю у Швейцарії.",
     partnersDisclosure:
       "Ми додаємо лише ті зовнішні ресурси, які можуть бути практично корисними нашій аудиторії.",
     adLabel: "Реклама",
@@ -328,6 +334,12 @@ export const messages = {
     partnersFirstBenefit1: "Suche nach ukrainischen Unternehmen in verschiedenen Staedten Deutschlands.",
     partnersFirstBenefit2: "Kategorien wie Rechtsberatung, Medizin, Uebersetzungen, Transporte, Bildung und weitere Dienstleistungen.",
     partnersFirstBenefit3: "Katalogformat fuer eine schnelle Suche nach passenden Kontakten.",
+    partnersSecondName: "SchweizDaten.com",
+    partnersSecondDescription:
+      "Statistikportal zur Schweiz mit Daten zu Loehnen, Steuern, Wohnen, Lebenshaltungskosten, Kantonen und Krankenversicherung.",
+    partnersSecondBenefit1: "Vergleiche zwischen Kantonen nach Lohn, Steuern, Bevoelkerung und Kosten.",
+    partnersSecondBenefit2: "Uebersichten zu Wohnen, Krankenkasse, Arbeitslosigkeit, Bildung und weiteren Kennzahlen.",
+    partnersSecondBenefit3: "Nuetzlich fuer Menschen, die Zahlen und Orientierung zum Leben in der Schweiz suchen.",
     partnersDisclosure:
       "Wir verlinken nur externe Ressourcen, die fuer unsere Zielgruppe praktisch nuetzlich sein koennen.",
     adLabel: "Werbung",
