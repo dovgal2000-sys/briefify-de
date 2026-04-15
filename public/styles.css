@@ -820,6 +820,7 @@ h2 {
 .partner-card-copy {
   display: grid;
   gap: 12px;
+  min-width: 0;
 }
 
 .partner-meta {
@@ -839,6 +840,18 @@ h2 {
 .partner-about h3,
 .partner-note h2 {
   margin-bottom: 0;
+}
+
+.partner-card-copy h2 {
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.partner-site a {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .partner-card-copy p,
