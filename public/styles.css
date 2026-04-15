@@ -817,6 +817,49 @@ h2 {
   background: #fff;
 }
 
+.partner-logo-schweizdaten {
+  aspect-ratio: auto;
+  min-height: 140px;
+  padding: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.schweizdaten-badge {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: #ea2b1f;
+  color: #fff;
+  font-size: 1.8rem;
+  font-weight: 800;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.schweizdaten-wordmark {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  font-size: clamp(1.6rem, 3.2vw, 2.5rem);
+  font-weight: 800;
+  line-height: 1.05;
+}
+
+.schweizdaten-wordmark-dark {
+  color: #1d2c44;
+}
+
+.schweizdaten-wordmark-accent {
+  color: #ea4b31;
+}
+
 .partner-card-copy {
   display: grid;
   gap: 12px;
@@ -852,6 +895,18 @@ h2 {
 .partner-site a {
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .partner-card-copy p,

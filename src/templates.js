@@ -814,7 +814,7 @@ export function buildPartnersPage(publicConfig, { locale = "uk", t, currentPath 
                     <span class="article-category-chip">${t("partnersCategoryDirectories")}</span>
                     <span class="partner-site">${t("partnersSiteLabel")}: <a href="https://dovidka.de/" target="_blank" rel="noopener noreferrer">dovidka.de</a></span>
                   </div>
-                  <h2>${t("partnersFirstName")}</h2>
+                  <h2>Dovidka<wbr>.de</h2>
                   <p>${t("partnersFirstDescription")}</p>
                 </div>
               </div>
@@ -841,13 +841,18 @@ export function buildPartnersPage(publicConfig, { locale = "uk", t, currentPath 
 
             <article class="partner-card">
               <div class="partner-card-head">
-                <img class="partner-logo" src="/assets/partner-schweizdaten.jpg" alt="${t("partnersSecondName")} logo" loading="lazy" />
+                <div class="partner-logo partner-logo-schweizdaten" aria-label="${t("partnersSecondName")} logo" role="img">
+                  <span class="schweizdaten-badge" aria-hidden="true">+</span>
+                  <span class="schweizdaten-wordmark" aria-hidden="true">
+                    <span class="schweizdaten-wordmark-dark">Schweiz</span><span class="schweizdaten-wordmark-accent">Daten</span>
+                  </span>
+                </div>
                 <div class="partner-card-copy">
                   <div class="partner-meta">
                     <span class="article-category-chip">${t("partnersCategoryDirectories")}</span>
                     <span class="partner-site">${t("partnersSiteLabel")}: <a href="https://schweizdaten.com/" target="_blank" rel="noopener noreferrer">schweizdaten.com</a></span>
                   </div>
-                  <h2>${t("partnersSecondName")}</h2>
+                  <h2 class="visually-hidden">${t("partnersSecondName")}</h2>
                   <p>${t("partnersSecondDescription")}</p>
                 </div>
               </div>
