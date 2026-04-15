@@ -153,6 +153,7 @@ function layout({ title, description, body, publicConfig, extraHead = "", locale
       <nav class="nav-links">
         <a href="/#how-it-works">${t("navHowItWorks")}</a>
         <a href="/statti">${t("navArticles")}</a>
+        <a href="/partners">${t("navPartners")}</a>
         <a href="/#legal">${t("navLegal")}</a>
       </nav>
       ${renderLocaleSwitcher(currentPath, locale, t)}
@@ -168,6 +169,7 @@ function layout({ title, description, body, publicConfig, extraHead = "", locale
       <div>
         <h4>${t("footerLegal")}</h4>
         <a href="/statti">${t("navArticles")}</a>
+        <a href="/partners">${t("footerPartners")}</a>
         <a href="/impressum">Impressum</a>
         <a href="/datenschutz">Datenschutzerklärung</a>
         <a href="/kontakt">${t("legalContactTitle")}</a>
@@ -732,6 +734,103 @@ export function buildArticlesIndexPage(publicConfig, articles, categories, activ
               ${renderArticleCards(articles, { locale, t })}
           </div>
         </div>
+      </main>
+    `
+  });
+}
+
+export function buildPartnersPage(publicConfig, { locale = "uk", t, currentPath = "/partners" } = {}) {
+  const title = `${t("partnersTitle")} - ${publicConfig.appName}`;
+  const description = t("partnersDescription");
+  const canonicalUrl = `${publicConfig.siteOrigin}/partners`;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: t("partnersTitle"),
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        item: {
+          "@type": "WebSite",
+          name: t("partnersFirstName"),
+          url: "https://dovidka.de/"
+        }
+      }
+    ]
+  };
+
+  return layout({
+    title,
+    description,
+    publicConfig,
+    locale,
+    currentPath,
+    t,
+    extraHead: `
+      ${buildSocialMeta({
+        title,
+        description,
+        imageUrl: `${publicConfig.siteOrigin}/assets/og-image.png`,
+        canonicalUrl,
+        type: "website"
+      })}
+      <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
+    `,
+    body: `
+      <main class="section">
+        <section class="container">
+          <div class="section-head section-head-left">
+            <span class="eyebrow">${t("partnersEyebrow")}</span>
+            <h1>${t("partnersTitle")}</h1>
+            <p class="lead">${t("partnersLead")}</p>
+          </div>
+
+          <div class="partners-layout">
+            <aside class="partner-note">
+              <h2>${t("partnersWhyTitle")}</h2>
+              <ul>
+                <li>${t("partnersWhyPoint1")}</li>
+                <li>${t("partnersWhyPoint2")}</li>
+                <li>${t("partnersWhyPoint3")}</li>
+              </ul>
+              <p>${t("partnersDisclosure")}</p>
+            </aside>
+
+            <article class="partner-card">
+              <div class="partner-card-head">
+                <img class="partner-logo" src="/assets/partner-dovidka.jpg" alt="${t("partnersFirstName")} logo" loading="lazy" />
+                <div class="partner-card-copy">
+                  <div class="partner-meta">
+                    <span class="article-category-chip">${t("partnersCategoryDirectories")}</span>
+                    <span class="partner-site">${t("partnersSiteLabel")}: <a href="https://dovidka.de/" target="_blank" rel="noopener noreferrer">dovidka.de</a></span>
+                  </div>
+                  <h2>${t("partnersFirstName")}</h2>
+                  <p>${t("partnersFirstDescription")}</p>
+                </div>
+              </div>
+
+              <div class="partner-card-body">
+                <div class="partner-details">
+                  <strong>${t("partnersCategoryLabel")}</strong>
+                  <span>${t("partnersCategoryDirectories")}</span>
+                </div>
+                <section class="partner-about">
+                  <h3>${t("partnersAboutTitle")}</h3>
+                  <ul>
+                    <li>${t("partnersFirstBenefit1")}</li>
+                    <li>${t("partnersFirstBenefit2")}</li>
+                    <li>${t("partnersFirstBenefit3")}</li>
+                  </ul>
+                </section>
+              </div>
+
+              <div class="partner-actions">
+                <a class="primary-button" href="https://dovidka.de/" target="_blank" rel="noopener noreferrer">${t("partnersVisit")}</a>
+              </div>
+            </article>
+          </div>
+        </section>
       </main>
     `
   });

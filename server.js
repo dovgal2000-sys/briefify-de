@@ -36,7 +36,8 @@ import {
   buildArticlesIndexPage,
   buildFeedbackPage,
   buildHomePage,
-  buildLegalPage
+  buildLegalPage,
+  buildPartnersPage
 } from "./src/templates.js";
 
 const app = express();
@@ -241,6 +242,15 @@ app.get("/feedback", (_req, res) => {
   );
 });
 
+app.get("/partners", (_req, res) => {
+  res.type("html").send(
+    buildPartnersPage(publicConfig, {
+      locale: res.locals.locale,
+      t: res.locals.t
+    })
+  );
+});
+
 app.get("/statti/kategoria/:categorySlug", (req, res) => {
   const categories = getAllCategories(res.locals.locale);
   const category = getCategoryBySlug(req.params.categorySlug, res.locals.locale);
@@ -310,6 +320,7 @@ app.get("/sitemap.xml", (_req, res) => {
   const urls = [
     "/",
     "/statti",
+    "/partners",
     "/impressum",
     "/datenschutz",
     "/kontakt",

@@ -46,3 +46,5 @@
     at Function.listen (D:\Projects\Web\Briefify\node_modules\express\lib\application.js:635:24)
     at file:///D:/Projects/Web/Briefify/server.js:725:5
     at ModuleJob.run (node:internal/modules/esm/module_job:194:25)
+[2026-04-15T07:54:06.933Z] boot start; cwd=D:\Projects\Web\Briefify; node=v18.17.1; env.PORT=3000; config.port=3000
+[2026-04-15T07:54:06.942Z] server listening on port 3000
