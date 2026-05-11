@@ -392,8 +392,7 @@ app.get("/robots.txt", (_req, res) => {
   const aiCrawlerRules = AI_CRAWLERS.flatMap((crawler) => [
     "",
     `User-agent: ${crawler}`,
-    "Allow: /",
-    "Disallow: /api/"
+    "Allow: /"
   ]);
 
   res.type("text/plain").send(

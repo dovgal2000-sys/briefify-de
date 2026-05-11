@@ -1064,7 +1064,7 @@ export function buildArticlePage(article, relatedArticles, publicConfig, { local
     author: {
       "@type": "Organization",
       "@id": `${baseUrl}/#organization`,
-      name: publicConfig.appName
+      name: t("articleAuthorName")
     },
     publisher: {
       "@id": `${baseUrl}/#organization`
@@ -1131,7 +1131,8 @@ export function buildArticlePage(article, relatedArticles, publicConfig, { local
             <h1>${article.title}</h1>
             <p class="lead">${article.description}</p>
             <div class="article-meta">
-              <span>${t("articleDate")}: ${formatArticleDate(article.publishedAt, locale)}</span>
+              <span>${t("articleAuthor")}: <span rel="author">${t("articleAuthorName")}</span></span>
+              <span>${t("articleDate")}: <time datetime="${article.publishedAt}">${formatArticleDate(article.publishedAt, locale)}</time></span>
               <span>${t("articleReadingTime")}: ${article.readingTime}</span>
               <span>${t("articleCategory")}: <a href="/statti/kategoria/${article.category.slug}">${article.category.title}</a></span>
             </div>
