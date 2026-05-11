@@ -399,7 +399,6 @@ app.get("/robots.txt", (_req, res) => {
     [
       "User-agent: *",
       "Allow: /",
-      "Disallow: /api/",
       ...aiCrawlerRules,
       "",
       `Host: ${publicConfig.siteOrigin.replace(/^https?:\/\//, "").replace(/\/$/, "")}`,

@@ -483,8 +483,27 @@ h2 {
   gap: 18px;
 }
 
+.faq-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
 .step-card {
   padding: 24px;
+}
+
+.faq-card {
+  padding: 22px;
+  background: var(--surface);
+  border: 1px solid rgba(0, 87, 183, 0.12);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+}
+
+.faq-card p {
+  margin: 0;
+  color: var(--muted);
 }
 
 .step-card > strong {
@@ -1512,6 +1531,7 @@ h2 {
 @media (max-width: 900px) {
   .hero-grid,
   .steps,
+  .faq-grid,
   .result-columns,
   .footer-grid,
   .partners-layout,

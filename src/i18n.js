@@ -18,7 +18,7 @@ export const messages = {
     footerPartners: "Партнерські посилання",
     homeTitle: "Пояснення німецьких листів українською",
     homeDescription:
-      "Завантажте фото або PDF з листом чи іншим текстом та отримайте зрозуміле пояснення українською.",
+      "Briefify.de пояснює німецькі листи українською: завантажте фото або PDF, отримайте короткий зміст, дедлайни, ризики та чернетку відповіді.",
     homeEyebrow: "Сервіс для українців у Німеччині",
     homeLead:
       "Briefify допомагає зрозуміти зміст листа або тексту, знайти дедлайни, ризики та підготувати чернетку відповіді мовою оригіналу.",
@@ -63,6 +63,20 @@ export const messages = {
     seoLead:
       "Ми зібрали прості статті українською про Jobcenter, Auslaenderbehoerde, Krankenkasse, Schule та інші часті листи, які приходять у Німеччині.",
     seoButton: "Переглянути всі статті",
+    faqEyebrow: "Питання та відповіді",
+    faqTitle: "Що варто знати перед аналізом листа",
+    faqQuestion1: "Чи є Briefify.de юридичною консультацією?",
+    faqAnswer1:
+      "Ні. Briefify.de пояснює зміст листа простими словами, але не замінює адвоката, Beratungsstelle або офіційний переклад.",
+    faqQuestion2: "Які документи можна завантажувати?",
+    faqAnswer2:
+      "Можна завантажувати JPG, PNG або PDF з листом чи текстом, якщо ви маєте право передати цей документ на обробку.",
+    faqQuestion3: "Що показує результат аналізу?",
+    faqAnswer3:
+      "Сервіс показує короткий зміст, можливі дії, дедлайни, ризики та, коли доречно, чернетку ввічливої відповіді.",
+    faqQuestion4: "Чи треба перевіряти результат самостійно?",
+    faqAnswer4:
+      "Так. Завжди звіряйте імена, номери справ, суми, дати, адреси та реквізити з оригінальним документом.",
     feedbackEyebrow: "Відгуки",
     feedbackTitle: "Що кажуть користувачі",
     feedbackLead:
@@ -223,7 +237,7 @@ export const messages = {
     footerPartners: "Partnerlinks",
     homeTitle: "Deutsche Briefe verständlich erklären",
     homeDescription:
-      "Laden Sie ein Foto oder PDF eines Briefes oder anderen Textes hoch und erhalten Sie eine verständliche Erklärung auf Deutsch.",
+      "Briefify.de erklärt deutsche Briefe verständlich: Foto oder PDF hochladen und Zusammenfassung, Fristen, Risiken sowie einen Antwortentwurf erhalten.",
     homeEyebrow: "Service für mehrsprachige Kommunikation",
     homeLead:
       "Briefify hilft dabei, den Inhalt eines Briefes oder Textes zu verstehen, Fristen und Risiken zu erkennen und eine Antwort in der Originalsprache vorzubereiten.",
@@ -268,6 +282,20 @@ export const messages = {
     seoLead:
       "Hier finden Sie verständliche Artikel auf Ukrainisch über Jobcenter, Auslaenderbehoerde, Krankenkasse, Schule und andere häufige Schreiben in Deutschland.",
     seoButton: "Alle Artikel ansehen",
+    faqEyebrow: "Fragen und Antworten",
+    faqTitle: "Was Sie vor der Analyse wissen sollten",
+    faqQuestion1: "Ist Briefify.de eine Rechtsberatung?",
+    faqAnswer1:
+      "Nein. Briefify.de erklärt den Inhalt eines Schreibens verständlich, ersetzt aber keine Rechtsberatung, Beratungsstelle oder amtliche Übersetzung.",
+    faqQuestion2: "Welche Dokumente kann ich hochladen?",
+    faqAnswer2:
+      "Sie können JPG, PNG oder PDF mit einem Brief oder Text hochladen, wenn Sie berechtigt sind, dieses Dokument verarbeiten zu lassen.",
+    faqQuestion3: "Was zeigt die Analyse?",
+    faqAnswer3:
+      "Der Service zeigt eine Zusammenfassung, mögliche Schritte, Fristen, Risiken und, wenn passend, einen höflichen Antwortentwurf.",
+    faqQuestion4: "Soll ich das Ergebnis selbst prüfen?",
+    faqAnswer4:
+      "Ja. Prüfen Sie Namen, Aktenzeichen, Beträge, Daten, Adressen und Kontodaten immer mit dem Originaldokument.",
     feedbackEyebrow: "Feedback",
     feedbackTitle: "Was Nutzer sagen",
     feedbackLead:

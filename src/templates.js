@@ -105,6 +105,21 @@ function buildWebApplicationJsonLd(publicConfig, description) {
   };
 }
 
+function buildFaqJsonLd(faqItems) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqItems.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer
+      }
+    }))
+  };
+}
+
 function buildBreadcrumbJsonLd(publicConfig, items) {
   const baseUrl = publicConfig.siteOrigin.replace(/\/$/, "");
 
@@ -442,6 +457,12 @@ export function buildHomePage(publicConfig, featuredArticles = [], feedbackEntri
   const title = `${publicConfig.appName} - ${t("homeTitle")}`;
   const description = t("homeDescription");
   const frontendMessages = JSON.stringify(getFrontendMessages(locale));
+  const faqItems = [
+    { question: t("faqQuestion1"), answer: t("faqAnswer1") },
+    { question: t("faqQuestion2"), answer: t("faqAnswer2") },
+    { question: t("faqQuestion3"), answer: t("faqAnswer3") },
+    { question: t("faqQuestion4"), answer: t("faqAnswer4") }
+  ];
   return layout({
     title,
     description,
@@ -460,6 +481,7 @@ export function buildHomePage(publicConfig, featuredArticles = [], feedbackEntri
       ${buildJsonLdScript(buildOrganizationJsonLd(publicConfig))}
       ${buildJsonLdScript(buildWebSiteJsonLd(publicConfig, description))}
       ${buildJsonLdScript(buildWebApplicationJsonLd(publicConfig, description))}
+      ${buildJsonLdScript(buildFaqJsonLd(faqItems))}
     `,
     body: `
       <main>
@@ -640,6 +662,27 @@ export function buildHomePage(publicConfig, featuredArticles = [], feedbackEntri
             </div>
             <div class="section-cta">
               <a class="secondary-button" href="/statti">${t("seoButton")}</a>
+            </div>
+          </div>
+        </section>
+
+        <section class="section section-accent">
+          <div class="container">
+            <div class="section-head">
+              <span class="eyebrow">${t("faqEyebrow")}</span>
+              <h2>${t("faqTitle")}</h2>
+            </div>
+            <div class="faq-grid">
+              ${faqItems
+                .map(
+                  (item) => `
+                    <article class="faq-card">
+                      <h3>${item.question}</h3>
+                      <p>${item.answer}</p>
+                    </article>
+                  `
+                )
+                .join("")}
             </div>
           </div>
         </section>
