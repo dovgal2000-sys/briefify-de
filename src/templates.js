@@ -64,7 +64,17 @@ function buildOrganizationJsonLd(publicConfig) {
   };
 }
 
-function buildWebSiteJsonLd(publicConfig, description) {
+function buildSchemaAuthor(publicConfig, authorName = publicConfig.appName) {
+  const baseUrl = publicConfig.siteOrigin.replace(/\/$/, "");
+
+  return {
+    "@type": "Organization",
+    "@id": `${baseUrl}/#organization`,
+    name: authorName
+  };
+}
+
+function buildWebSiteJsonLd(publicConfig, description, authorName = publicConfig.appName) {
   const baseUrl = publicConfig.siteOrigin.replace(/\/$/, "");
 
   return {
@@ -75,6 +85,7 @@ function buildWebSiteJsonLd(publicConfig, description) {
     url: baseUrl,
     description,
     inLanguage: ["uk", "de"],
+    author: buildSchemaAuthor(publicConfig, authorName),
     publisher: {
       "@id": `${baseUrl}/#organization`
     }
@@ -105,10 +116,11 @@ function buildWebApplicationJsonLd(publicConfig, description) {
   };
 }
 
-function buildFaqJsonLd(faqItems) {
+function buildFaqJsonLd(faqItems, publicConfig, authorName) {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
+    author: buildSchemaAuthor(publicConfig, authorName),
     mainEntity: faqItems.map((item) => ({
       "@type": "Question",
       name: item.question,
@@ -228,6 +240,7 @@ function layout({ title, description, body, publicConfig, extraHead = "", locale
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${title}</title>
   <meta name="description" content="${description}" />
+  <meta name="author" content="${escapeHtml(t("articleAuthorName"))}" />
   ${extraHead}
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
   <link rel="icon" type="image/png" sizes="64x64" href="/assets/favicon.png" />
@@ -272,6 +285,7 @@ function layout({ title, description, body, publicConfig, extraHead = "", locale
       <div>
         <h3>${publicConfig.appName}</h3>
         <p>${t("footerDescription")}</p>
+        <p class="byline post-author site-author">${t("articleAuthor")}: <span rel="author">${t("articleAuthorName")}</span></p>
       </div>
       <div>
         <h4>${t("footerLegal")}</h4>
@@ -479,9 +493,9 @@ export function buildHomePage(publicConfig, featuredArticles = [], feedbackEntri
         type: "website"
       })}
       ${buildJsonLdScript(buildOrganizationJsonLd(publicConfig))}
-      ${buildJsonLdScript(buildWebSiteJsonLd(publicConfig, description))}
+      ${buildJsonLdScript(buildWebSiteJsonLd(publicConfig, description, t("articleAuthorName")))}
       ${buildJsonLdScript(buildWebApplicationJsonLd(publicConfig, description))}
-      ${buildJsonLdScript(buildFaqJsonLd(faqItems))}
+      ${buildJsonLdScript(buildFaqJsonLd(faqItems, publicConfig, t("articleAuthorName")))}
     `,
     body: `
       <main>
