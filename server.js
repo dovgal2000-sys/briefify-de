@@ -158,6 +158,86 @@ function buildAdminPresets() {
   ];
 }
 
+const AI_CRAWLERS = [
+  "GPTBot",
+  "OAI-SearchBot",
+  "ChatGPT-User",
+  "ClaudeBot",
+  "Claude-SearchBot",
+  "PerplexityBot",
+  "Google-Extended",
+  "GoogleOther",
+  "GoogleOther-Image",
+  "GoogleOther-Video",
+  "Applebot",
+  "Applebot-Extended",
+  "Bytespider",
+  "CCBot"
+];
+
+const TRUST_PAGES = {
+  "pro-nas": {
+    title: "Про нас",
+    description: "Хто стоїть за Briefify.de і для кого створений сервіс.",
+    html: `
+      <h1>Про Briefify.de</h1>
+      <p>Briefify.de допомагає українцям у Німеччині зрозуміти офіційні та побутові листи простими словами.</p>
+      <p>Сервіс пояснює зміст документа, виділяє можливі дедлайни, суми, ризики та пропонує чернетку ввічливої відповіді, якщо вона доречна.</p>
+      <h2>Для кого цей сервіс</h2>
+      <p>Briefify.de створений для людей, яким важко швидко розібратися з німецькими листами від Jobcenter, школи, Krankenkasse, Ausländerbehörde, орендодавців або сервісних компаній.</p>
+      <h2>Важливе обмеження</h2>
+      <p>Briefify.de не є юридичною консультацією і не замінює адвоката, Beratungsstelle або офіційний переклад. Якщо лист має серйозні правові наслідки, зверніться до профільного фахівця.</p>
+    `
+  },
+  "yak-pratsiuye": {
+    title: "Як працює Briefify",
+    description: "Пояснення процесу аналізу листів у Briefify.de.",
+    html: `
+      <h1>Як працює Briefify</h1>
+      <p>Ви завантажуєте фото, зображення або PDF листа. Сервіс читає зміст документа та повертає коротке пояснення зрозумілою мовою.</p>
+      <h2>Що ви отримуєте</h2>
+      <ul>
+        <li>короткий зміст листа;</li>
+        <li>список дій, які варто перевірити;</li>
+        <li>дедлайни, суми та можливі ризики, якщо вони є в документі;</li>
+        <li>чернетку відповіді та пояснення її змісту.</li>
+      </ul>
+      <h2>Що перевіряти самостійно</h2>
+      <p>Завжди звіряйте імена, номери справ, адреси, суми, дати та банківські реквізити з оригінальним документом.</p>
+    `
+  },
+  "bezpeka-ta-pryvatnist": {
+    title: "Безпека та приватність",
+    description: "Як Briefify.de ставиться до приватності, документів і технічної безпеки.",
+    html: `
+      <h1>Безпека та приватність</h1>
+      <p>Briefify.de обробляє документи тільки для того, щоб підготувати пояснення листа. Ми не просимо завантажувати більше даних, ніж потрібно для розбору конкретного документа.</p>
+      <h2>Що варто приховати перед завантаженням</h2>
+      <p>Якщо можливо, закрийте або обріжте зайві персональні дані, які не потрібні для розуміння листа: повні номери рахунків, медичні деталі, паролі, коди доступу або інші секретні дані.</p>
+      <h2>Документи з високим ризиком</h2>
+      <p>Не завантажуйте документи, якщо ви не маєте права їх обробляти або вони містять дані інших людей без їхньої згоди.</p>
+      <p>Детальні юридичні відомості наведені в <a href="/datenschutz">Datenschutzerklärung</a>.</p>
+    `
+  },
+  "redaktsiina-polityka": {
+    title: "Редакційна політика",
+    description: "Як Briefify.de готує інформаційні статті та приклади.",
+    html: `
+      <h1>Редакційна політика</h1>
+      <p>Статті на Briefify.de мають інформаційний характер. Їхня мета - допомогти читачам краще орієнтуватися в типових німецьких листах і формулюваннях.</p>
+      <h2>Принципи</h2>
+      <ul>
+        <li>пояснюємо простою мовою;</li>
+        <li>відділяємо загальні поради від юридично значущих рішень;</li>
+        <li>нагадуємо перевіряти дедлайни та дані в оригіналі;</li>
+        <li>не видаємо інформаційні матеріали за індивідуальну юридичну консультацію.</li>
+      </ul>
+      <h2>Оновлення</h2>
+      <p>Матеріали можуть оновлюватися, коли змінюються процеси, формулювання або потреби користувачів.</p>
+    `
+  }
+};
+
 function ensureAdminAccess(req, res) {
   if (!isAdminConfigured()) {
     res.status(503).type("html").send(
@@ -309,8 +389,69 @@ app.get("/statti/:slug", (req, res) => {
 });
 
 app.get("/robots.txt", (_req, res) => {
+  const aiCrawlerRules = AI_CRAWLERS.flatMap((crawler) => [
+    "",
+    `User-agent: ${crawler}`,
+    "Allow: /",
+    "Disallow: /api/"
+  ]);
+
   res.type("text/plain").send(
-    ["User-agent: *", "Allow: /", "Disallow: /api/", "", "Sitemap: /sitemap.xml"].join("\n")
+    [
+      "User-agent: *",
+      "Allow: /",
+      "Disallow: /api/",
+      ...aiCrawlerRules,
+      "",
+      `Host: ${publicConfig.siteOrigin.replace(/^https?:\/\//, "").replace(/\/$/, "")}`,
+      `Sitemap: ${publicConfig.siteOrigin.replace(/\/$/, "")}/sitemap.xml`
+    ].join("\n")
+  );
+});
+
+app.get("/llms.txt", (_req, res) => {
+  const baseUrl = publicConfig.siteOrigin.replace(/\/$/, "");
+  const articles = getAllArticles("uk").slice(0, 12);
+  const articleLinks = articles.map((article) => `- [${article.title}](${baseUrl}/statti/${article.slug}): ${article.description}`);
+
+  res.type("text/plain").send(
+    [
+      "# Briefify.de",
+      "",
+      "> Briefify.de helps Ukrainian speakers in Germany understand German official and everyday letters in plain language.",
+      "",
+      "Briefify.de is a web application for explaining letters from German institutions and services. It can summarize a document, identify actions, deadlines, amounts, risks, and draft a polite reply. It is informational only and is not legal advice.",
+      "",
+      "## Primary Pages",
+      `- [Home](${baseUrl}/): Upload a letter and get a plain-language explanation.`,
+      `- [Articles](${baseUrl}/statti): Guides about German letters, Jobcenter, school, health insurance, contracts, and migration offices.`,
+      `- [How Briefify Works](${baseUrl}/yak-pratsiuye): Explanation of the analysis process and limitations.`,
+      `- [About](${baseUrl}/pro-nas): Who the service is for and what it does.`,
+      `- [Safety and Privacy](${baseUrl}/bezpeka-ta-pryvatnist): Practical privacy guidance for uploaded documents.`,
+      `- [Editorial Policy](${baseUrl}/redaktsiina-polityka): How informational articles are prepared.`,
+      `- [Contact](${baseUrl}/kontakt): Contact details.`,
+      "",
+      "## Useful Articles",
+      ...articleLinks,
+      "",
+      "## AI Crawling and Citation Guidance",
+      "- AI assistants may crawl and cite public pages on this site.",
+      "- Do not submit private user documents to the public web or quote user-uploaded document content.",
+      "- When citing Briefify.de, link to the most relevant public page and preserve the informational-not-legal-advice context.",
+      "- API endpoints under /api/ are not intended for crawling.",
+      "",
+      "## Languages",
+      "- Main audience language: Ukrainian.",
+      "- Site and legal context: Germany.",
+      "- Some interface and legal pages are also available in German.",
+      "",
+      "## Contact",
+      `- Support: ${publicConfig.supportEmail}`,
+      `- Legal contact: ${publicConfig.contactEmail}`,
+      "",
+      "## Sitemap",
+      `- ${baseUrl}/sitemap.xml`
+    ].join("\n")
   );
 });
 
@@ -321,6 +462,10 @@ app.get("/sitemap.xml", (_req, res) => {
     "/",
     "/statti",
     "/partners",
+    "/pro-nas",
+    "/yak-pratsiuye",
+    "/bezpeka-ta-pryvatnist",
+    "/redaktsiina-polityka",
     "/impressum",
     "/datenschutz",
     "/kontakt",
@@ -340,6 +485,19 @@ ${urls
 
   res.type("application/xml").send(xml);
 });
+
+for (const [slug, page] of Object.entries(TRUST_PAGES)) {
+  app.get(`/${slug}`, (_req, res) => {
+    res.type("html").send(
+      buildLegalPage(slug, page.title, page.html, publicConfig, {
+        locale: res.locals.locale,
+        t: res.locals.t,
+        currentPath: `/${slug}`,
+        description: page.description
+      })
+    );
+  });
+}
 
 app.get("/impressum", async (_req, res) => {
   try {

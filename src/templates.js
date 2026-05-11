@@ -13,6 +13,10 @@ function formatUserText(value = "") {
   return escapeHtml(value).replaceAll("\n", "<br />");
 }
 
+function stripHtml(value = "") {
+  return String(value).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
 function buildSocialMeta({ title, description, imageUrl, canonicalUrl, type = "website" }) {
   return `
   <meta property="og:type" content="${type}" />
@@ -27,6 +31,93 @@ function buildSocialMeta({ title, description, imageUrl, canonicalUrl, type = "w
   <meta name="twitter:description" content="${description}" />
   <meta name="twitter:image" content="${imageUrl}" />
   <link rel="canonical" href="${canonicalUrl}" />`;
+}
+
+function buildJsonLdScript(data) {
+  return `<script type="application/ld+json">${JSON.stringify(data).replaceAll("</", "<\\/")}</script>`;
+}
+
+function buildOrganizationJsonLd(publicConfig) {
+  const baseUrl = publicConfig.siteOrigin.replace(/\/$/, "");
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": `${baseUrl}/#organization`,
+    name: publicConfig.companyName || publicConfig.appName,
+    url: baseUrl,
+    logo: `${baseUrl}/assets/logo.svg`,
+    email: publicConfig.supportEmail,
+    contactPoint: {
+      "@type": "ContactPoint",
+      email: publicConfig.supportEmail,
+      contactType: "customer support",
+      availableLanguage: ["uk", "de"]
+    },
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: publicConfig.streetAddress,
+      postalCode: publicConfig.postalCode,
+      addressLocality: publicConfig.city,
+      addressCountry: publicConfig.country
+    }
+  };
+}
+
+function buildWebSiteJsonLd(publicConfig, description) {
+  const baseUrl = publicConfig.siteOrigin.replace(/\/$/, "");
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": `${baseUrl}/#website`,
+    name: publicConfig.appName,
+    url: baseUrl,
+    description,
+    inLanguage: ["uk", "de"],
+    publisher: {
+      "@id": `${baseUrl}/#organization`
+    }
+  };
+}
+
+function buildWebApplicationJsonLd(publicConfig, description) {
+  const baseUrl = publicConfig.siteOrigin.replace(/\/$/, "");
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "@id": `${baseUrl}/#app`,
+    name: publicConfig.appName,
+    url: baseUrl,
+    applicationCategory: "UtilityApplication",
+    operatingSystem: "Web",
+    description,
+    inLanguage: ["uk", "de"],
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "EUR"
+    },
+    publisher: {
+      "@id": `${baseUrl}/#organization`
+    }
+  };
+}
+
+function buildBreadcrumbJsonLd(publicConfig, items) {
+  const baseUrl = publicConfig.siteOrigin.replace(/\/$/, "");
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: item.name,
+      item: `${baseUrl}${item.path}`
+    }))
+  };
 }
 
 function buildIubendaHeadStart(publicConfig) {
@@ -154,6 +245,7 @@ function layout({ title, description, body, publicConfig, extraHead = "", locale
         <a href="/#how-it-works">${t("navHowItWorks")}</a>
         <a href="/statti">${t("navArticles")}</a>
         <a href="/partners">${t("navPartners")}</a>
+        <a href="/pro-nas">Про нас</a>
         <a href="/#legal">${t("navLegal")}</a>
       </nav>
       ${renderLocaleSwitcher(currentPath, locale, t)}
@@ -170,6 +262,10 @@ function layout({ title, description, body, publicConfig, extraHead = "", locale
         <h4>${t("footerLegal")}</h4>
         <a href="/statti">${t("navArticles")}</a>
         <a href="/partners">${t("footerPartners")}</a>
+        <a href="/pro-nas">Про нас</a>
+        <a href="/yak-pratsiuye">Як працює Briefify</a>
+        <a href="/bezpeka-ta-pryvatnist">Безпека та приватність</a>
+        <a href="/redaktsiina-polityka">Редакційна політика</a>
         <a href="/impressum">Impressum</a>
         <a href="/datenschutz">Datenschutzerklärung</a>
         <a href="/kontakt">${t("legalContactTitle")}</a>
@@ -353,13 +449,18 @@ export function buildHomePage(publicConfig, featuredArticles = [], feedbackEntri
     locale,
     currentPath: "/",
     t,
-    extraHead: buildSocialMeta({
-      title,
-      description,
-      imageUrl: `${publicConfig.siteOrigin}/assets/og-image.png`,
-      canonicalUrl: `${publicConfig.siteOrigin}/`,
-      type: "website"
-    }),
+    extraHead: `
+      ${buildSocialMeta({
+        title,
+        description,
+        imageUrl: `${publicConfig.siteOrigin}/assets/og-image.png`,
+        canonicalUrl: `${publicConfig.siteOrigin}/`,
+        type: "website"
+      })}
+      ${buildJsonLdScript(buildOrganizationJsonLd(publicConfig))}
+      ${buildJsonLdScript(buildWebSiteJsonLd(publicConfig, description))}
+      ${buildJsonLdScript(buildWebApplicationJsonLd(publicConfig, description))}
+    `,
     body: `
       <main>
         <section class="hero">
@@ -666,9 +767,25 @@ export function buildFeedbackPage(publicConfig, feedbackEntries = [], { locale =
   });
 }
 
-export function buildLegalPage(titleKey, title, legalHtml, publicConfig, { locale = "uk", t, currentPath = `/${titleKey}` } = {}) {
+export function buildLegalPage(titleKey, title, legalHtml, publicConfig, { locale = "uk", t, currentPath = `/${titleKey}`, description: customDescription = "" } = {}) {
   const pageTitle = `${title} - ${publicConfig.appName}`;
-  const description = `${titleKey} for ${publicConfig.appName}`;
+  const description = customDescription || `${titleKey} for ${publicConfig.appName}`;
+  const canonicalPath = titleKey === "kontakt" ? "kontakt" : titleKey;
+  const canonicalUrl = `${publicConfig.siteOrigin}/${canonicalPath}`;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: title,
+    url: canonicalUrl,
+    description,
+    isPartOf: {
+      "@id": `${publicConfig.siteOrigin.replace(/\/$/, "")}/#website`
+    },
+    publisher: {
+      "@id": `${publicConfig.siteOrigin.replace(/\/$/, "")}/#organization`
+    }
+  };
+
   return layout({
     title: pageTitle,
     description,
@@ -676,13 +793,17 @@ export function buildLegalPage(titleKey, title, legalHtml, publicConfig, { local
     locale,
     currentPath,
     t,
-    extraHead: buildSocialMeta({
-      title: pageTitle,
-      description,
-      imageUrl: `${publicConfig.siteOrigin}/assets/og-image.png`,
-      canonicalUrl: `${publicConfig.siteOrigin}/${titleKey === "kontakt" ? "kontakt" : titleKey}`,
-      type: "website"
-    }),
+    extraHead: `
+      ${buildSocialMeta({
+        title: pageTitle,
+        description,
+        imageUrl: `${publicConfig.siteOrigin}/assets/og-image.png`,
+        canonicalUrl,
+        type: "website"
+      })}
+      ${buildJsonLdScript(buildOrganizationJsonLd(publicConfig))}
+      ${buildJsonLdScript(jsonLd)}
+    `,
     body: `
       <main class="section">
         <div class="container legal-card">
@@ -720,6 +841,25 @@ export function buildArticlesIndexPage(publicConfig, articles, categories, activ
   const canonicalUrl = activeCategory
     ? `${publicConfig.siteOrigin}/statti/kategoria/${activeCategory.slug}`
     : `${publicConfig.siteOrigin}/statti`;
+  const itemListJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: titlePrefix,
+    url: canonicalUrl,
+    description,
+    mainEntity: {
+      "@type": "ItemList",
+      itemListElement: articles.map((article, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        url: `${publicConfig.siteOrigin}/statti/${article.slug}`,
+        name: article.title
+      }))
+    },
+    publisher: {
+      "@id": `${publicConfig.siteOrigin.replace(/\/$/, "")}/#organization`
+    }
+  };
   return layout({
     title,
     description,
@@ -727,13 +867,17 @@ export function buildArticlesIndexPage(publicConfig, articles, categories, activ
     locale,
     currentPath,
     t,
-    extraHead: buildSocialMeta({
-      title,
-      description,
-      imageUrl: `${publicConfig.siteOrigin}/assets/og-image.png`,
-      canonicalUrl,
-      type: "website"
-    }),
+    extraHead: `
+      ${buildSocialMeta({
+        title,
+        description,
+        imageUrl: `${publicConfig.siteOrigin}/assets/og-image.png`,
+        canonicalUrl,
+        type: "website"
+      })}
+      ${buildJsonLdScript(buildOrganizationJsonLd(publicConfig))}
+      ${buildJsonLdScript(itemListJsonLd)}
+    `,
     body: `
       <main class="section">
         <div class="container">
@@ -783,6 +927,10 @@ export function buildPartnersPage(publicConfig, { locale = "uk", t, currentPath 
       }
     ]
   };
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd(publicConfig, [
+    { name: publicConfig.appName, path: "/" },
+    { name: t("partnersTitle"), path: "/partners" }
+  ]);
 
   return layout({
     title,
@@ -799,7 +947,9 @@ export function buildPartnersPage(publicConfig, { locale = "uk", t, currentPath 
         canonicalUrl,
         type: "website"
       })}
+      ${buildJsonLdScript(buildOrganizationJsonLd(publicConfig))}
       <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
+      ${buildJsonLdScript(breadcrumbJsonLd)}
     `,
     body: `
       <main class="section">
@@ -902,6 +1052,37 @@ export function buildArticlePage(article, relatedArticles, publicConfig, { local
   const keywords = article.keywords?.join(", ") || "";
   const title = `${article.title} - ${publicConfig.appName}`;
   const canonicalUrl = `${publicConfig.siteOrigin}/statti/${article.slug}`;
+  const baseUrl = publicConfig.siteOrigin.replace(/\/$/, "");
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: article.title,
+    description: article.description,
+    image: `${baseUrl}${article.ogImagePath || "/assets/og-image.png"}`,
+    datePublished: article.publishedAt,
+    dateModified: article.publishedAt,
+    author: {
+      "@type": "Organization",
+      "@id": `${baseUrl}/#organization`,
+      name: publicConfig.appName
+    },
+    publisher: {
+      "@id": `${baseUrl}/#organization`
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": canonicalUrl
+    },
+    articleSection: article.category.title,
+    keywords: article.keywords || [],
+    inLanguage: locale,
+    articleBody: stripHtml(article.body).slice(0, 5000)
+  };
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd(publicConfig, [
+    { name: publicConfig.appName, path: "/" },
+    { name: t("navArticles"), path: "/statti" },
+    { name: article.title, path: `/statti/${article.slug}` }
+  ]);
   const relatedHtml = relatedArticles.length
     ? `
       <section class="article-related">
@@ -929,6 +1110,9 @@ export function buildArticlePage(article, relatedArticles, publicConfig, { local
         canonicalUrl,
         type: "article"
       })}
+      ${buildJsonLdScript(buildOrganizationJsonLd(publicConfig))}
+      ${buildJsonLdScript(articleJsonLd)}
+      ${buildJsonLdScript(breadcrumbJsonLd)}
     `,
     body: `
       <main class="section">

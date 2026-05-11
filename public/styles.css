@@ -435,7 +435,7 @@ h2 {
   left: 2px;
   right: 2px;
   height: 8px;
-  background: rgba(255, 215, 0, 0.95);
+  background: #ff0000;
   clip-path: polygon(0 0, 100% 0, 50% 100%);
 }
 
