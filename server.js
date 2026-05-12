@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import multer from "multer";
 import { appendFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import { DateTime } from "luxon";
 
@@ -238,6 +239,274 @@ const TRUST_PAGES = {
   }
 };
 
+function getBaseUrl() {
+  return publicConfig.siteOrigin.replace(/\/$/, "");
+}
+
+function createSha256(value) {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+function getAgentLinkHeaders() {
+  return [
+    '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"',
+    '</docs/api>; rel="service-doc"; type="text/html"',
+    '</openapi.json>; rel="service-desc"; type="application/vnd.oai.openapi+json"',
+    '</api/health>; rel="status"; type="application/json"',
+    '</.well-known/agent-skills/index.json>; rel="service-desc"; type="application/json"',
+    '</.well-known/mcp/server-card.json>; rel="service-desc"; type="application/json"'
+  ].join(", ");
+}
+
+function wantsMarkdown(req) {
+  return (req.headers.accept || "").toLowerCase().includes("text/markdown");
+}
+
+function decodeHtmlEntities(value = "") {
+  return String(value)
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#x27;/g, "'")
+    .replace(/&#(\d+);/g, (_match, code) => String.fromCharCode(Number(code)));
+}
+
+function extractHtmlMeta(html, pattern) {
+  const match = html.match(pattern);
+  return decodeHtmlEntities(match?.[1] || "").trim();
+}
+
+function htmlToMarkdown(html, fallbackUrl = getBaseUrl()) {
+  const title =
+    extractHtmlMeta(html, /<meta\s+name=["']title["']\s+content=["']([^"']*)["'][^>]*>/i) ||
+    extractHtmlMeta(html, /<meta\s+property=["']og:title["']\s+content=["']([^"']*)["'][^>]*>/i) ||
+    extractHtmlMeta(html, /<title>([\s\S]*?)<\/title>/i);
+  const description =
+    extractHtmlMeta(html, /<meta\s+name=["']description["']\s+content=["']([^"']*)["'][^>]*>/i) ||
+    extractHtmlMeta(html, /<meta\s+property=["']og:description["']\s+content=["']([^"']*)["'][^>]*>/i);
+  const image = extractHtmlMeta(html, /<meta\s+property=["']og:image["']\s+content=["']([^"']*)["'][^>]*>/i);
+  const jsonLdBlocks = Array.from(
+    html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)
+  ).map((match) => match[1].trim());
+
+  let body = html
+    .replace(/<!DOCTYPE[\s\S]*?>/gi, "")
+    .replace(/<head[\s\S]*?<\/head>/gi, "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<nav[\s\S]*?<\/nav>/gi, "")
+    .replace(/<header[\s\S]*?<\/header>/gi, "")
+    .replace(/<footer[\s\S]*?<\/footer>/gi, "")
+    .replace(/<form[\s\S]*?<\/form>/gi, "")
+    .replace(/<h1[^>]*>([\s\S]*?)<\/h1>/gi, "\n# $1\n\n")
+    .replace(/<h2[^>]*>([\s\S]*?)<\/h2>/gi, "\n## $1\n\n")
+    .replace(/<h3[^>]*>([\s\S]*?)<\/h3>/gi, "\n### $1\n\n")
+    .replace(/<h4[^>]*>([\s\S]*?)<\/h4>/gi, "\n#### $1\n\n")
+    .replace(/<p[^>]*>([\s\S]*?)<\/p>/gi, "\n$1\n\n")
+    .replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, "\n- $1")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, (_match, href, text) => {
+      const absoluteHref = href.startsWith("/") ? `${fallbackUrl}${href}` : href;
+      return `[${text}](${absoluteHref})`;
+    })
+    .replace(/<[^>]+>/g, " ")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/[ \t]{2,}/g, " ");
+
+  body = decodeHtmlEntities(body).trim();
+
+  const frontmatter = [
+    "---",
+    title ? `title: ${title}` : "",
+    description ? `description: ${description}` : "",
+    image ? `image: ${image}` : "",
+    "---"
+  ].filter(Boolean);
+
+  const sections = [];
+  if (frontmatter.length > 2) {
+    sections.push(frontmatter.join("\n"));
+  }
+  sections.push(body || `# ${title || "Briefify.de"}`);
+  if (jsonLdBlocks.length) {
+    sections.push(["```json", ...jsonLdBlocks, "```"].join("\n"));
+  }
+
+  return `${sections.join("\n\n")}\n`;
+}
+
+function sendHtmlOrMarkdown(req, res, html, { status = 200, markdown = "" } = {}) {
+  res.status(status).set("Vary", "Accept");
+
+  if (wantsMarkdown(req)) {
+    const markdownBody = markdown || htmlToMarkdown(html);
+    return res
+      .type("text/markdown")
+      .set("X-Markdown-Tokens", String(Math.ceil(markdownBody.length / 4)))
+      .set("Content-Signal", "ai-train=no, search=yes, ai-input=yes")
+      .send(markdownBody);
+  }
+
+  return res.type("html").send(html);
+}
+
+function buildHomeMarkdown(articles = [], feedbackEntries = [], locale = "uk") {
+  const baseUrl = getBaseUrl();
+  const articleLines = articles
+    .map((article) => `- [${article.title}](${baseUrl}/statti/${article.slug}) - ${article.description}`)
+    .join("\n");
+  const feedbackLines = feedbackEntries
+    .map((entry) => `- ${entry.author_name}: ${entry.message}`)
+    .join("\n");
+
+  return [
+    "# Briefify.de",
+    "",
+    locale === "de"
+      ? "Briefify.de erklärt deutsche Briefe verständlich und hilft, Fristen, Risiken und Antwortentwürfe zu erkennen."
+      : "Briefify.de пояснює німецькі листи українською та допомагає знайти дедлайни, ризики й чернетку відповіді.",
+    "",
+    "## Key actions",
+    "",
+    `- Analyze a document: ${baseUrl}/`,
+    `- Read articles: ${baseUrl}/statti`,
+    `- Safety and privacy: ${baseUrl}/bezpeka-ta-pryvatnist`,
+    `- Contact: ${baseUrl}/kontakt`,
+    "",
+    "## Featured articles",
+    "",
+    articleLines || "- No featured articles are currently available.",
+    "",
+    "## User feedback",
+    "",
+    feedbackLines || "- No public feedback is currently available.",
+    "",
+    "## Agent discovery",
+    "",
+    `- API catalog: ${baseUrl}/.well-known/api-catalog`,
+    `- OpenAPI description: ${baseUrl}/openapi.json`,
+    `- Agent skills: ${baseUrl}/.well-known/agent-skills/index.json`,
+    `- MCP server card: ${baseUrl}/.well-known/mcp/server-card.json`,
+    `- llms.txt: ${baseUrl}/llms.txt`
+  ].join("\n");
+}
+
+function sendHomeResponse(req, res, articles, approvedFeedback) {
+  res.set("Link", getAgentLinkHeaders());
+
+  const html = buildHomePage(publicConfig, articles.slice(0, 6), approvedFeedback, {
+      locale: res.locals.locale,
+      t: res.locals.t
+    });
+  return sendHtmlOrMarkdown(req, res, html, {
+    markdown: buildHomeMarkdown(articles.slice(0, 6), approvedFeedback, res.locals.locale)
+  });
+}
+
+function getOpenApiDocument() {
+  const baseUrl = getBaseUrl();
+
+  return {
+    openapi: "3.1.0",
+    info: {
+      title: "Briefify.de public API",
+      version: "0.1.0",
+      description:
+        "Public endpoints exposed by Briefify.de for document analysis, public configuration, feedback submission, and health checks. Document analysis requires user consent and anti-bot validation."
+    },
+    servers: [{ url: baseUrl }],
+    paths: {
+      "/api/health": {
+        get: {
+          summary: "Health check",
+          responses: {
+            200: {
+              description: "Service is running"
+            }
+          }
+        }
+      },
+      "/api/public-config": {
+        get: {
+          summary: "Public UI configuration",
+          responses: {
+            200: {
+              description: "Public configuration values used by the browser client"
+            }
+          }
+        }
+      },
+      "/api/analyze-letter": {
+        post: {
+          summary: "Analyze an uploaded document",
+          description:
+            "Accepts multipart form data with a JPG, PNG, or PDF document. Requires consent and Cloudflare Turnstile validation when configured.",
+          requestBody: {
+            required: true,
+            content: {
+              "multipart/form-data": {
+                schema: {
+                  type: "object",
+                  required: ["letter", "consent"],
+                  properties: {
+                    letter: { type: "string", format: "binary" },
+                    consent: { type: "string" },
+                    form_loaded_at: { type: "string" },
+                    website: { type: "string" },
+                    cf_turnstile_response: { type: "string" }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: { description: "Structured document explanation" },
+            400: { description: "Invalid request" },
+            429: { description: "Rate limit exceeded" }
+          }
+        }
+      },
+      "/api/feedback": {
+        post: {
+          summary: "Submit user feedback",
+          description:
+            "Submits feedback after a successful document analysis flow. Feedback is moderated before publication.",
+          responses: {
+            200: { description: "Feedback received" },
+            403: { description: "Feedback access token missing or invalid" }
+          }
+        }
+      }
+    }
+  };
+}
+
+function getAgentSkillMarkdown(baseUrl = getBaseUrl()) {
+  return `# Briefify Document Analysis
+
+Briefify.de helps Ukrainian speakers in Germany understand German letters and documents in plain language.
+
+## Use Cases
+
+- Explain a German official or everyday letter.
+- Identify deadlines, amounts, risks, and next steps.
+- Draft a polite reply in the original document language.
+
+## Entry Points
+
+- Web app: ${baseUrl}/
+- API catalog: ${baseUrl}/.well-known/api-catalog
+- OpenAPI: ${baseUrl}/openapi.json
+
+## Safety
+
+Briefify.de is informational only and is not legal advice. Users should not upload documents they are not allowed to process. Agents must not publish or quote private uploaded document content.`;
+}
+
 function ensureAdminAccess(req, res) {
   if (!isAdminConfigured()) {
     res.status(503).type("html").send(
@@ -275,15 +544,179 @@ app.get("/ads.txt", (_req, res) => {
   res.sendFile("ads.txt", { root: process.cwd() });
 });
 
-app.get("/", (_req, res) => {
+app.get("/api/health", (_req, res) => {
+  res.json({
+    status: "ok",
+    service: publicConfig.appName,
+    time: new Date().toISOString()
+  });
+});
+
+app.get("/openapi.json", (_req, res) => {
+  res.type("application/vnd.oai.openapi+json").send(JSON.stringify(getOpenApiDocument(), null, 2));
+});
+
+app.get("/docs/api", (req, res) => {
+  const baseUrl = getBaseUrl();
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Briefify.de API Documentation</title>
+</head>
+<body>
+  <main>
+    <h1>Briefify.de API Documentation</h1>
+    <p>Briefify.de exposes a small public API for health checks, public configuration, document analysis, and moderated feedback.</p>
+    <ul>
+      <li><a href="${baseUrl}/openapi.json">OpenAPI description</a></li>
+      <li><a href="${baseUrl}/.well-known/api-catalog">API catalog</a></li>
+      <li><a href="${baseUrl}/api/health">Health endpoint</a></li>
+    </ul>
+    <p>Document analysis requires explicit user consent and anti-bot validation when configured. Briefify.de is informational only and is not legal advice.</p>
+  </main>
+</body>
+</html>`;
+  sendHtmlOrMarkdown(req, res, html);
+});
+
+app.get("/.well-known/api-catalog", (_req, res) => {
+  const baseUrl = getBaseUrl();
+  res
+    .type("application/linkset+json")
+    .set("Link", '</.well-known/api-catalog>; rel="api-catalog"')
+    .send(
+      JSON.stringify(
+        {
+          linkset: [
+            {
+              anchor: `${baseUrl}/api`,
+              "service-desc": [{ href: `${baseUrl}/openapi.json`, type: "application/vnd.oai.openapi+json" }],
+              "service-doc": [{ href: `${baseUrl}/docs/api`, type: "text/html" }],
+              status: [{ href: `${baseUrl}/api/health`, type: "application/json" }],
+              item: [
+                { href: `${baseUrl}/api/health` },
+                { href: `${baseUrl}/api/public-config` },
+                { href: `${baseUrl}/api/analyze-letter` },
+                { href: `${baseUrl}/api/feedback` }
+              ]
+            }
+          ]
+        },
+        null,
+        2
+      )
+    );
+});
+
+app.get("/.well-known/openid-configuration", (_req, res) => {
+  const baseUrl = getBaseUrl();
+  res.json({
+    issuer: baseUrl,
+    authorization_endpoint: `${baseUrl}/oauth/authorize`,
+    token_endpoint: `${baseUrl}/oauth/token`,
+    jwks_uri: `${baseUrl}/oauth/jwks.json`,
+    response_types_supported: [],
+    grant_types_supported: [],
+    scopes_supported: [],
+    claims_supported: [],
+    service_documentation: `${baseUrl}/docs/api`,
+    note: "Briefify.de does not currently offer OAuth/OIDC login for public agent APIs."
+  });
+});
+
+app.get("/.well-known/oauth-authorization-server", (_req, res) => {
+  const baseUrl = getBaseUrl();
+  res.json({
+    issuer: baseUrl,
+    authorization_endpoint: `${baseUrl}/oauth/authorize`,
+    token_endpoint: `${baseUrl}/oauth/token`,
+    jwks_uri: `${baseUrl}/oauth/jwks.json`,
+    response_types_supported: [],
+    grant_types_supported: [],
+    scopes_supported: [],
+    service_documentation: `${baseUrl}/docs/api`,
+    note: "No OAuth grants are currently enabled for public Briefify.de APIs."
+  });
+});
+
+app.get("/.well-known/oauth-protected-resource", (_req, res) => {
+  const baseUrl = getBaseUrl();
+  res.json({
+    resource: baseUrl,
+    authorization_servers: [baseUrl],
+    scopes_supported: [],
+    bearer_methods_supported: ["header"],
+    resource_documentation: `${baseUrl}/docs/api`,
+    note: "Public discovery endpoints are unauthenticated. Browser document-analysis flows use consent, rate limiting, and anti-bot validation rather than OAuth."
+  });
+});
+
+app.get("/oauth/jwks.json", (_req, res) => {
+  res.json({ keys: [] });
+});
+
+app.all(["/oauth/authorize", "/oauth/token"], (_req, res) => {
+  res.status(501).json({
+    error: "oauth_not_enabled",
+    error_description: "Briefify.de does not currently issue OAuth tokens for public APIs."
+  });
+});
+
+app.get("/.well-known/mcp/server-card.json", (_req, res) => {
+  const baseUrl = getBaseUrl();
+  res.json({
+    schemaVersion: "0.1",
+    serverInfo: {
+      name: "Briefify.de",
+      version: "0.1.0"
+    },
+    description: "Agent discovery card for Briefify.de document explanation resources.",
+    transports: [
+      {
+        type: "webmcp",
+        endpoint: baseUrl
+      }
+    ],
+    capabilities: {
+      tools: true,
+      resources: true,
+      prompts: false
+    },
+    links: {
+      apiCatalog: `${baseUrl}/.well-known/api-catalog`,
+      openapi: `${baseUrl}/openapi.json`,
+      llms: `${baseUrl}/llms.txt`
+    }
+  });
+});
+
+app.get("/.well-known/agent-skills/briefify-document-analysis/SKILL.md", (_req, res) => {
+  res.type("text/markdown").send(getAgentSkillMarkdown());
+});
+
+app.get("/.well-known/agent-skills/index.json", (_req, res) => {
+  const baseUrl = getBaseUrl();
+  const skillMarkdown = getAgentSkillMarkdown(baseUrl);
+  res.json({
+    $schema: "https://agentskills.io/schemas/agent-skills-index-v0.2.json",
+    skills: [
+      {
+        name: "briefify-document-analysis",
+        type: "skill",
+        description: "Explain German letters for Ukrainian speakers and identify actions, deadlines, risks, and reply drafts.",
+        url: `${baseUrl}/.well-known/agent-skills/briefify-document-analysis/SKILL.md`,
+        sha256: createSha256(skillMarkdown)
+      }
+    ]
+  });
+});
+
+app.get("/", (req, res) => {
   const articles = getAllArticles(res.locals.locale);
   const approvedFeedback = statsStore.getApprovedFeedback(6);
-  res.type("html").send(
-    buildHomePage(publicConfig, articles.slice(0, 6), approvedFeedback, {
-      locale: res.locals.locale,
-      t: res.locals.t
-    })
-  );
+  sendHomeResponse(req, res, articles, approvedFeedback);
 });
 
 app.get("/index.html", (_req, res) => {
@@ -294,10 +727,10 @@ app.get("/index.htm", (_req, res) => {
   res.redirect(301, "/");
 });
 
-app.get("/statti", (_req, res) => {
+app.get("/statti", (req, res) => {
   const articles = getAllArticles(res.locals.locale);
   const categories = getAllCategories(res.locals.locale);
-  res.type("html").send(
+  sendHtmlOrMarkdown(req, res,
     buildArticlesIndexPage(publicConfig, articles, categories, null, {
       locale: res.locals.locale,
       t: res.locals.t,
@@ -306,14 +739,14 @@ app.get("/statti", (_req, res) => {
   );
 });
 
-app.get("/feedback", (_req, res) => {
+app.get("/feedback", (req, res) => {
   const approvedFeedback = statsStore.getApprovedFeedback(24);
-  const cookies = parseCookies(_req.headers.cookie || "");
+  const cookies = parseCookies(req.headers.cookie || "");
   const hasFeedbackAccess = verifyFeedbackAccessToken(
     cookies[config.feedbackAccessCookieName],
     config
   );
-  res.type("html").send(
+  sendHtmlOrMarkdown(req, res,
     buildFeedbackPage(publicConfig, approvedFeedback, {
       locale: res.locals.locale,
       t: res.locals.t,
@@ -322,8 +755,8 @@ app.get("/feedback", (_req, res) => {
   );
 });
 
-app.get("/partners", (_req, res) => {
-  res.type("html").send(
+app.get("/partners", (req, res) => {
+  sendHtmlOrMarkdown(req, res,
     buildPartnersPage(publicConfig, {
       locale: res.locals.locale,
       t: res.locals.t
@@ -336,7 +769,7 @@ app.get("/statti/kategoria/:categorySlug", (req, res) => {
   const category = getCategoryBySlug(req.params.categorySlug, res.locals.locale);
 
   if (!category) {
-    return res.status(404).type("html").send(buildLegalPage(
+    return sendHtmlOrMarkdown(req, res, buildLegalPage(
       "404",
       "Категорію не знайдено",
       `
@@ -346,11 +779,11 @@ app.get("/statti/kategoria/:categorySlug", (req, res) => {
       `,
       publicConfig,
       { locale: res.locals.locale, t: res.locals.t, currentPath: req.path }
-    ));
+    ), { status: 404 });
   }
 
   const filteredArticles = getArticlesByCategory(category.slug, res.locals.locale);
-  return res.type("html").send(
+  return sendHtmlOrMarkdown(req, res,
     buildArticlesIndexPage(publicConfig, filteredArticles, categories, category, {
       locale: res.locals.locale,
       t: res.locals.t,
@@ -363,7 +796,7 @@ app.get("/statti/:slug", (req, res) => {
   const article = getArticleBySlug(req.params.slug, res.locals.locale);
 
   if (!article) {
-    return res.status(404).type("html").send(buildLegalPage(
+    return sendHtmlOrMarkdown(req, res, buildLegalPage(
       "404",
       "Статтю не знайдено",
       `
@@ -373,14 +806,14 @@ app.get("/statti/:slug", (req, res) => {
       `,
       publicConfig,
       { locale: res.locals.locale, t: res.locals.t, currentPath: req.path }
-    ));
+    ), { status: 404 });
   }
 
   const relatedArticles = getAllArticles(res.locals.locale)
     .filter((candidate) => candidate.slug !== article.slug)
     .slice(0, 3);
 
-  return res.type("html").send(
+  return sendHtmlOrMarkdown(req, res,
     buildArticlePage(article, relatedArticles, publicConfig, {
       locale: res.locals.locale,
       t: res.locals.t
@@ -399,6 +832,7 @@ app.get("/robots.txt", (_req, res) => {
     [
       "User-agent: *",
       "Allow: /",
+      "Content-Signal: ai-train=no, search=yes, ai-input=yes",
       ...aiCrawlerRules,
       "",
       `Host: ${publicConfig.siteOrigin.replace(/^https?:\/\//, "").replace(/\/$/, "")}`,
@@ -485,8 +919,8 @@ ${urls
 });
 
 for (const [slug, page] of Object.entries(TRUST_PAGES)) {
-  app.get(`/${slug}`, (_req, res) => {
-    res.type("html").send(
+  app.get(`/${slug}`, (req, res) => {
+    sendHtmlOrMarkdown(req, res,
       buildLegalPage(slug, page.title, page.html, publicConfig, {
         locale: res.locals.locale,
         t: res.locals.t,
@@ -497,10 +931,10 @@ for (const [slug, page] of Object.entries(TRUST_PAGES)) {
   });
 }
 
-app.get("/impressum", async (_req, res) => {
+app.get("/impressum", async (req, res) => {
   try {
     const legalHtml = await getLegalContent("impressum", publicConfig);
-    res.type("html").send(
+    sendHtmlOrMarkdown(req, res,
       buildLegalPage("impressum", "Impressum", legalHtml, publicConfig, {
         locale: res.locals.locale,
         t: res.locals.t
@@ -512,10 +946,10 @@ app.get("/impressum", async (_req, res) => {
   }
 });
 
-app.get("/datenschutz", async (_req, res) => {
+app.get("/datenschutz", async (req, res) => {
   try {
     const legalHtml = await getLegalContent("datenschutz", publicConfig);
-    res.type("html").send(
+    sendHtmlOrMarkdown(req, res,
       buildLegalPage("datenschutz", "Datenschutzerklärung", legalHtml, publicConfig, {
         locale: res.locals.locale,
         t: res.locals.t
@@ -527,13 +961,13 @@ app.get("/datenschutz", async (_req, res) => {
   }
 });
 
-app.get("/kontakt", (_req, res) => {
+app.get("/kontakt", (req, res) => {
   const legalHtml = `
     <h1>${res.locals.t("legalContactTitle")}</h1>
     <p>${res.locals.t("legalContactIntro")}</p>
     <p><a href="mailto:${publicConfig.contactEmail}">${publicConfig.contactEmail}</a></p>
   `;
-  res.type("html").send(
+  sendHtmlOrMarkdown(req, res,
     buildLegalPage("kontakt", res.locals.t("legalContactTitle"), legalHtml, publicConfig, {
       locale: res.locals.locale,
       t: res.locals.t

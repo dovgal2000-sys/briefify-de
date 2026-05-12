@@ -423,3 +423,51 @@ document.querySelectorAll("[data-feedback-carousel]").forEach((button) => {
     });
   });
 });
+
+function initWebMcp() {
+  if (!navigator.modelContext?.provideContext) return;
+
+  navigator.modelContext.provideContext({
+    name: "Briefify.de",
+    description:
+      "Briefify.de helps Ukrainian speakers in Germany understand German letters, deadlines, risks, and possible replies.",
+    tools: [
+      {
+        name: "briefify_get_page_context",
+        description: "Return public context about the current Briefify.de page.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+          additionalProperties: false
+        },
+        execute: async () => ({
+          title: document.title,
+          url: window.location.href,
+          description:
+            document.querySelector("meta[name='description']")?.getAttribute("content") || "",
+          language: document.documentElement.lang || "uk"
+        })
+      },
+      {
+        name: "briefify_focus_upload",
+        description: "Focus the document upload control when it is available on the page.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+          additionalProperties: false
+        },
+        execute: async () => {
+          fileInput?.focus();
+          return {
+            available: Boolean(fileInput),
+            message: fileInput
+              ? "The upload control is focused."
+              : "The upload control is not available on this page."
+          };
+        }
+      }
+    ]
+  });
+}
+
+initWebMcp();
