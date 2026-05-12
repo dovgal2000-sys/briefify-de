@@ -254,7 +254,8 @@ function getAgentLinkHeaders() {
     '</openapi.json>; rel="service-desc"; type="application/vnd.oai.openapi+json"',
     '</api/health>; rel="status"; type="application/json"',
     '</.well-known/agent-skills/index.json>; rel="service-desc"; type="application/json"',
-    '</.well-known/mcp/server-card.json>; rel="service-desc"; type="application/json"'
+    '</.well-known/mcp/server-card.json>; rel="service-desc"; type="application/json"',
+    '</.well-known/http-message-signatures-directory>; rel="service-desc"; type="application/http-message-signatures-directory+json"'
   ].join(", ");
 }
 
@@ -692,6 +693,21 @@ app.get("/.well-known/mcp/server-card.json", (_req, res) => {
   });
 });
 
+app.get("/.well-known/http-message-signatures-directory", (_req, res) => {
+  res
+    .type("application/http-message-signatures-directory+json")
+    .set("Cache-Control", "max-age=86400")
+    .send(
+      JSON.stringify(
+        {
+          keys: []
+        },
+        null,
+        2
+      )
+    );
+});
+
 app.get("/.well-known/agent-skills/briefify-document-analysis/SKILL.md", (_req, res) => {
   res.type("text/markdown").send(getAgentSkillMarkdown());
 });
@@ -828,7 +844,10 @@ app.get("/robots.txt", (_req, res) => {
     "Allow: /"
   ]);
 
-  res.type("text/plain").send(
+  res
+    .type("text/plain")
+    .set("Content-Signal", "ai-train=no, search=yes, ai-input=yes")
+    .send(
     [
       "User-agent: *",
       "Allow: /",
